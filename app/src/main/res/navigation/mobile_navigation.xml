@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/navigation_home">
+
+    <fragment
+        android:id="@+id/navigation_home"
+        android:name="com.example.featherfind.home.Home"
+        android:label="@string/title_home"
+        tools:layout="@layout/fragment_home" />
+
+    <fragment
+        android:id="@+id/navigation_explore"
+        android:name="com.example.featherfind.explore.Explore"
+        android:label="@string/title_explore"
+        tools:layout="@layout/fragment_explore" />
+
+    <fragment
+        android:id="@+id/navigation_add_sightings"
+        android:name="com.example.featherfind.add_sighting.AddSighting"
+        android:label="@string/title_add_sighting"
+        tools:layout="@layout/fragment_add_sighting" />
+
+    <fragment
+        android:id="@+id/navigation_sightings"
+        android:name="com.example.featherfind.sightings.Sightings"
+        android:label="@string/title_sightings"
+        tools:layout="@layout/fragment_sightings" />
+
+    <fragment
+        android:id="@+id/navigation_profile"
+        android:name="com.example.featherfind.profile.Profile"
+        android:label="@string/title_profile"
+        tools:layout="@layout/fragment_profile" />
+
+</navigation>
