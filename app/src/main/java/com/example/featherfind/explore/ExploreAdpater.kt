@@ -16,24 +16,33 @@ import com.github.mikephil.charting.data.BarEntry
 import java.util.Calendar
 import kotlin.math.min
 
+/**
+ * Adapter class for managing bird data in a RecyclerView.
+ */
 class BirdAdapter : RecyclerView.Adapter<BirdAdapter.BirdViewHolder>() {
+    // List to hold the bird data
     private var birdList: List<Bird> = mutableListOf()
 
-    // ViewHolder class
+    /**
+     * ViewHolder class to hold the UI elements for each bird item.
+     */
     class BirdViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val birdNameTextView: TextView = itemView.findViewById(R.id.birdNameTextView)
         val birdSciNameTextView: TextView = itemView.findViewById(R.id.birdSciName)
         val barChartContainer: BarChart = itemView.findViewById(R.id.barChart)
     }
 
-    // Create new views (invoked by the layout manager)
+    /**
+     * Inflates a new view and returns a new ViewHolder to hold it.
+     */
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BirdViewHolder {
-        // Inflate the bird_item view
         val itemView = LayoutInflater.from(parent.context).inflate(R.layout.bird_item, parent, false)
         return BirdViewHolder(itemView)
     }
 
-    // Replace the contents of a view (invoked by the layout manager)
+    /**
+     * Populates the data for each bird item.
+     */
     override fun onBindViewHolder(holder: BirdViewHolder, position: Int) {
         val currentBird = birdList[position]
         holder.birdNameTextView.text = currentBird.comName
@@ -44,7 +53,6 @@ class BirdAdapter : RecyclerView.Adapter<BirdAdapter.BirdViewHolder>() {
         barChart.description.isEnabled = false
         val entries = mutableListOf<BarEntry>()
 
-        // If histogramData is available, build the chart
         currentBird.histogramData?.let { data ->
             for (i in 0 until 12) {
                 val startIndex = i * 4
@@ -64,7 +72,6 @@ class BirdAdapter : RecyclerView.Adapter<BirdAdapter.BirdViewHolder>() {
             val barData = BarData(barDataSet)
             barChart.data = barData
 
-            // Create a LimitLine to indicate the current month
             val currentMonth = Calendar.getInstance().get(Calendar.MONTH).toFloat()
             val limitLine = LimitLine(currentMonth)
             limitLine.lineWidth = 1f
@@ -74,12 +81,10 @@ class BirdAdapter : RecyclerView.Adapter<BirdAdapter.BirdViewHolder>() {
             limitLine.labelPosition = LimitLine.LimitLabelPosition.RIGHT_TOP
 
             barChart.setExtraOffsets(0f, 0f, 0f, 0f)
-            // Add the LimitLine to the X-axis
             val xAxis = barChart.xAxis
-            xAxis.removeAllLimitLines()  // Remove previous lines if any
+            xAxis.removeAllLimitLines()
             xAxis.addLimitLine(limitLine)
 
-            // Set y-axis maximum value to 3
             val yAxisLeft = barChart.axisLeft
             val yAxisRight = barChart.axisRight
             yAxisLeft.axisMaximum = 0.025f
@@ -87,32 +92,36 @@ class BirdAdapter : RecyclerView.Adapter<BirdAdapter.BirdViewHolder>() {
             yAxisLeft.setDrawLabels(false)
             yAxisRight.setDrawLabels(false)
 
-            // Set the custom ValueFormatter for x-axis
             xAxis.position = XAxis.XAxisPosition.BOTTOM
             xAxis.valueFormatter = MonthValueFormatter()
 
             yAxisLeft.setDrawGridLines(false)
             yAxisRight.setDrawGridLines(false)
 
-            // Set the custom ValueFormatter for x-axis
             xAxis.setDrawGridLines(false)
             xAxis.position = XAxis.XAxisPosition.BOTTOM
             xAxis.valueFormatter = MonthValueFormatter()
-            xAxis.setLabelCount(12, false) // Show all 12 months
-            xAxis.setGranularity(1f) // Set granularity to 1 to show every month
+            xAxis.setLabelCount(12, false)
+            xAxis.setGranularity(1f)
 
-            barChart.invalidate()  // Refresh chart
+            barChart.invalidate()
         } else {
-            holder.barChartContainer.visibility = View.GONE  // Hide it
+            holder.barChartContainer.visibility = View.GONE
         }
     }
 
-    // Return the size of the dataset (invoked by the layout manager)
+    /**
+     * Returns the number of items in the bird list.
+     */
     override fun getItemCount(): Int {
         return birdList.size
     }
 
-    // Update the bird list and notify the adapter to refresh the items
+    /**
+     * Updates the bird data and sorts it by the last word in the common name.
+     *
+     * @param newBirdList A new list of birds.
+     */
     fun updateData(newBirdList: List<Bird>) {
         birdList = newBirdList.sortedBy {
             it.comName.split(" ").last()

@@ -23,11 +23,18 @@ import kotlinx.coroutines.launch
 import android.content.Intent
 import com.example.featherfind.R
 
-
+/**
+ * Fragment class for the Explore feature.
+ *
+ * This fragment handles the UI and interactions for exploring bird data.
+ */
 class ExploreFragment : Fragment() {
     private lateinit var viewModel: ExploreViewModel
-    private val PERMISSION_REQUEST_CODE = 1001  // Any unique number
+    private val PERMISSION_REQUEST_CODE = 1001
 
+    /**
+     * Inflates the layout for the Explore Fragment.
+     */
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -35,6 +42,9 @@ class ExploreFragment : Fragment() {
         return inflater.inflate(R.layout.fragment_explore, container, false)
     }
 
+    /**
+     * Initializes UI components and sets up data bindings.
+     */
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -56,35 +66,26 @@ class ExploreFragment : Fragment() {
                 progressBar.visibility = View.GONE
             }
         })
-        // Check for permissions using coroutine
         lifecycleScope.launch {
             if (hasLocationPermission()) {
-                // Fetch both birds and histograms
                 viewModel.initiateFetchBirdsAndHistograms()
             } else {
-                // Request permissions
                 requestLocationPermissions()
             }
         }
 
         viewModel.birdList.observe(viewLifecycleOwner, Observer { birds ->
-            // Update RecyclerView
             if (birds != null && birds.isNotEmpty()) {
                 adapter.updateData(birds)
             } else {
-                // Handle empty list scenario
             }
         })
-        // Observe changes to the bird list and update the RecyclerView
         viewModel.filteredBirdList.observe(viewLifecycleOwner, Observer { birds ->
-            // Update RecyclerView
             if (!birds.isNullOrEmpty()) {
                 adapter.updateData(birds)
             } else {
-                // Handle empty list scenario
             }
         })
-        // Set up the text watcher for the search functionality
         searchEditText.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
                 viewModel.filterBirds(s.toString())
@@ -92,15 +93,17 @@ class ExploreFragment : Fragment() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
-        // Set an OnClickListener to navigate to HotspotFragment
-        // Set an OnClickListener to navigate to MapsActivity
         btnHotspot.setOnClickListener {
             val intent = Intent(activity, MapsActivity::class.java)
             startActivity(intent)
         }
 
     }
-
+    /**
+     * Checks if the app has location permissions.
+     *
+     * @return True if permissions are granted, false otherwise.
+     */
     private fun hasLocationPermission(): Boolean {
         val fineLocationPermission = ContextCompat.checkSelfPermission(
             requireContext(),
@@ -114,6 +117,9 @@ class ExploreFragment : Fragment() {
                 coarseLocationPermission == PackageManager.PERMISSION_GRANTED
     }
 
+    /**
+     * Requests location permissions.
+     */
     private fun requestLocationPermissions() {
         ActivityCompat.requestPermissions(
             requireActivity(),
@@ -125,17 +131,22 @@ class ExploreFragment : Fragment() {
         )
     }
 
+    /**
+     * Handles the result of the permission request.
+     *
+     * @param requestCode The request code passed in requestPermissions().
+     * @param permissions The requested permissions.
+     * @param grantResults The grant results for the corresponding permissions.
+     */
     @Deprecated("Deprecated in Java")
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         if (requestCode == PERMISSION_REQUEST_CODE) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission granted, fetch birds using coroutine
                 lifecycleScope.launch {
                     viewModel.initiateFetchBirdsAndHistograms()
                 }
             } else {
-                // Permission denied, show a message to the user or disable functionality
-                // You can provide feedback to the user here
+
             }
         }
     }

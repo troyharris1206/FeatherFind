@@ -17,6 +17,11 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
+/**
+ * ViewModel class for the Explore feature.
+ *
+ * This ViewModel manages the data and logic for the ExploreFragment.
+ */
 class ExploreViewModel(application: Application) : AndroidViewModel(application) {
     private val LOCATION_PERMISSION_REQUEST_CODE = 101
     val isLoading = MutableLiveData<Boolean>()
@@ -25,13 +30,17 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
     val filteredBirdList = MutableLiveData<List<Bird>?>()
     private var isDataAlreadyLoaded = false
     private var fetchBirdsJob: Job? = null
-    private val viewModelJob = SupervisorJob() // Use SupervisorJob to handle child coroutines
+    private val viewModelJob = SupervisorJob()
     private val coroutineScope = CoroutineScope(viewModelJob + Dispatchers.Main)
     private val fusedLocationClient: FusedLocationProviderClient =
         LocationServices.getFusedLocationProviderClient(application)
     private val birdHistogramData = MutableLiveData<Map<String, List<Double>>>()
 
-    // Call this function whenever you want to filter the birds
+    /**
+     * Filters the bird list based on a query string.
+     *
+     * @param query The string to filter the bird list by.
+     */
     fun filterBirds(query: String) {
         val originalList = birdList.value ?: emptyList()
         val filteredList = if (query.isEmpty()) {
@@ -44,6 +53,11 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         filteredBirdList.value = filteredList
     }
 
+    /**
+     * Asynchronously fetches bird data.
+     *
+     * @return A list of Bird objects or null if the fetch fails.
+     */
     private suspend fun fetchBirds(): List<Bird>? {
         return withContext(Dispatchers.IO) {
             try {
@@ -64,6 +78,11 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    /**
+     * Retrieves the last known location.
+     *
+     * @return A Location object or null if the location is not available.
+     */
     private suspend fun getLastLocation(): Location? {
         return suspendCoroutine { continuation ->
             if (hasLocationPermission()) {
@@ -77,7 +96,6 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
                         }
 
                 } catch (securityException: SecurityException) {
-                    // Handle SecurityException here
                     Log.e("ExploreViewModel", "SecurityException: ${securityException.message}")
                     continuation.resume(null)
                 }
@@ -97,6 +115,11 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    /**
+     * Checks if location permissions are granted.
+     *
+     * @return True if permissions are granted, false otherwise.
+     */
     private fun hasLocationPermission(): Boolean {
         return (ActivityCompat.checkSelfPermission(
             getApplication(),
@@ -108,6 +131,9 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
                 ) == PackageManager.PERMISSION_GRANTED)
     }
 
+    /**
+     * Initiates the fetching of bird data and histogram data.
+     */
     fun initiateFetchBirdsAndHistograms() {
         if (isDataAlreadyLoaded) return
         if (fetchBirdsJob?.isActive == true) {
@@ -132,6 +158,12 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
             isLoading.postValue(false)
         }
     }
+    /**
+     * Loads histogram data for birds.
+     *
+     * @param filePath The file path of the histogram data.
+     * @return A map from bird names to lists of histogram data.
+     */
     private suspend fun internalLoadHistogramData(filePath: String): Map<String, List<Double>> {
         return withContext(Dispatchers.IO) {
             // Get the bird names from the API fetched list
@@ -142,7 +174,9 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-
+    /**
+     * Cancels all running coroutines when the ViewModel is cleared.
+     */
     override fun onCleared() {
         super.onCleared()
         coroutineScope.cancel()  // This will cancel all the child jobs as well
