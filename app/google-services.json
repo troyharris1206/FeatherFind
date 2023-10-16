@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "190827526006",
+    "project_id": "featherfind-e55c6",
+    "storage_bucket": "featherfind-e55c6.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:190827526006:android:6399b720ced1345d0f6c57",
+        "android_client_info": {
+          "package_name": "com.example.featherfind"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqOYgPylBUrV4LFVwkSrol9V-uQ1QoBJc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

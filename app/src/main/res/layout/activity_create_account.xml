@@ -69,7 +69,7 @@
                 android:textStyle="bold" />
 
             <EditText
-                android:id="@+id/fNameText"
+                android:id="@+id/txtFirstName"
                 android:layout_width="250dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
@@ -80,7 +80,7 @@
                 android:padding="5dip" />
 
             <EditText
-                android:id="@+id/surnameText"
+                android:id="@+id/txtSurname"
                 android:layout_width="250dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
@@ -91,18 +91,18 @@
                 android:padding="5dip" />
 
             <EditText
-                android:id="@+id/usernameText"
+                android:id="@+id/txtEmail"
                 android:layout_width="250dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:layout_marginTop="20dp"
                 android:background="@drawable/scrollview_style"
                 android:backgroundTint="@color/black"
-                android:hint="Username"
+                android:hint="Email"
                 android:padding="5dip" />
 
             <EditText
-                android:id="@+id/passwordText"
+                android:id="@+id/txtPassword"
                 android:layout_width="250dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
@@ -114,7 +114,7 @@
                 android:padding="5dip" />
 
             <EditText
-                android:id="@+id/confirmPasswordText"
+                android:id="@+id/txtConfirmPassword"
                 android:layout_width="250dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"

@@ -69,18 +69,18 @@
                 android:textStyle="bold" />
 
             <EditText
-                android:id="@+id/usernameTexts"
+                android:id="@+id/txtEmailLogin"
                 android:layout_width="250dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:layout_marginTop="40dp"
                 android:background="@drawable/scrollview_style"
                 android:backgroundTint="@color/black"
-                android:hint="Username"
+                android:hint="Email"
                 android:padding="5dip" />
 
             <EditText
-                android:id="@+id/passwordTexts"
+                android:id="@+id/txtPasswordLogin"
                 android:layout_width="250dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
