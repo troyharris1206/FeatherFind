@@ -1,9 +1,11 @@
 package com.example.featherfind.explore
 
+import okhttp3.ResponseBody
 import retrofit2.http.GET
 import retrofit2.http.Query
 
 import retrofit2.Response
+import retrofit2.http.Path
 
 /**
  * Defines the API endpoints for interacting with the eBird service.
@@ -20,7 +22,10 @@ interface EBirdAPI {
      * @return A Response object containing a list of Bird objects or an error.
      */
     @GET("data/obs/geo/recent")
-    suspend fun getBirdsByLatLng(@Query("lat") lat: Double, @Query("lng") lng: Double): Response<List<Bird>>
+    suspend fun getBirdsByLatLng(
+        @Query("lat") lat: Double,
+        @Query("lng") lng: Double
+    ): Response<List<Bird>>
 
     /**
      * Fetches a list of hotspots for a given geographic location.
@@ -31,8 +36,8 @@ interface EBirdAPI {
      * @param lng The longitude coordinate of the location.
      * @return A Response object containing a list of Hotspot objects or an error.
      */
-    @GET("ref/hotspot/geo")
-    suspend fun getHotspotsByLatLng(@Query("lat") lat: Double, @Query("lng") lng: Double): Response<List<Hotspot>>
+    @GET("ref/hotspot/{regionCode}")
+    suspend fun getHotspotsByRegion(@Path("regionCode") regionCode: String): Response<ResponseBody>
 }
 
 

@@ -24,8 +24,8 @@ data class Bird(
  * @property latitude The latitude coordinate of the hotspot.
  */
 data class Hotspot(
-    val name: String,
     val longitude: Double,
-    val latitude : Double
+    val latitude: Double,
+    val name: String
 )
 

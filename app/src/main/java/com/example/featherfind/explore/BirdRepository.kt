@@ -1,8 +1,10 @@
 package com.example.featherfind.explore
 
 import android.util.Log
+import com.example.featherfind.explore.DataParser.parseApiResponse
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -57,19 +59,29 @@ object BirdRepository {
     }
 
     /**
-     * Fetches hotspot data based on latitude and longitude.
+     * Fetches hotspot data based on region code.
      *
-     * @param lat The latitude coordinate.
-     * @param lng The longitude coordinate.
+     * @param regionCode The code representing the region.
      * @return A list of hotspots or null if the API call fails.
      */
-    suspend fun getHotspotsByLatLng(lat: Double?, lng: Double?): List<Hotspot>? {
+    suspend fun getHotspotsByRegion(regionCode: String?): List<Hotspot>? {
         return try {
-            val response: Response<List<Hotspot>> = api.getHotspotsByLatLng(lat ?: 0.0, lng ?: 0.0)
+
+            val response: Response<ResponseBody> = api.getHotspotsByRegion(regionCode ?: "")
+
             if (response.isSuccessful) {
-                response.body()
+                val responseBody = response.body()?.string()
+
+                if (responseBody != null) {
+                    // Use DataParser's parseApiResponse function to parse the hotspot data.
+                    parseApiResponse(responseBody)
+
+                } else {
+                    Log.e("BirdRepository", "API call successful but response body is null")
+                    null
+                }
             } else {
-                Log.e("BirdRepository", "API call for hotspots failed: ${response.errorBody()?.string()}")
+                Log.e("BirdRepository", "API call failed: ${response.errorBody()?.string()}")
                 null
             }
         } catch (e: Exception) {
