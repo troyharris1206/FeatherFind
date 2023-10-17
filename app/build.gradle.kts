@@ -5,6 +5,8 @@ import org.gradle.api.JavaVersion
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id ("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
+
 }
 val apikeyPropertiesFile = rootProject.file("apikey.properties")
 val apikeyProperties = Properties()
@@ -84,6 +86,8 @@ dependencies {
     implementation("androidx.fragment:fragment-ktx:1.6.1")
     implementation("androidx.cardview:cardview:1.0.0")
     implementation("com.google.android.gms:play-services-maps:18.1.0")
+    implementation ("com.google.maps.android:android-maps-utils:2.3.0")
+
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

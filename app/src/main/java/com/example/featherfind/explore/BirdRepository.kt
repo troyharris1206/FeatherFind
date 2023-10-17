@@ -1,13 +1,23 @@
 package com.example.featherfind.explore
 
+import android.content.Context
+import android.content.pm.PackageManager
 import android.util.Log
 import com.example.featherfind.explore.DataParser.parseApiResponse
+import com.google.android.gms.maps.model.LatLng
+import kotlinx.coroutines.suspendCancellableCoroutine
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.io.IOException
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 /**
  * Singleton repository for managing bird-related data.
@@ -89,4 +99,40 @@ object BirdRepository {
             null
         }
     }
+    suspend fun getGoogleDirections(context: Context, origin: LatLng, destination: LatLng): String? = suspendCancellableCoroutine { cont ->
+        val app = context.packageManager.getApplicationInfo(context.packageName, PackageManager.GET_META_DATA)
+        val bundle = app.metaData
+        val apiKey = bundle.getString("com.google.android.geo.API_KEY")
+
+        val url = HttpUrl.Builder()
+            .scheme("https")
+            .host("maps.googleapis.com")
+            .addPathSegments("maps/api/directions/json")
+            .addQueryParameter("origin", "${origin.latitude},${origin.longitude}")
+            .addQueryParameter("destination", "${destination.latitude},${destination.longitude}")
+            .addQueryParameter("key", apiKey)
+            .build()
+        println("Full URL: $url")
+        val request = Request.Builder().url(url).build()
+
+        val call = okHttpClient.newCall(request)
+        call.enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                cont.resumeWithException(e)
+            }
+
+            override fun onResponse(call: Call, response: okhttp3.Response) {
+                if (response.isSuccessful) {
+                    cont.resume(response.body()?.string())
+                } else {
+                    cont.resumeWithException(IOException("Google Directions API call failed: ${response.body()?.string()}"))
+                }
+            }
+        })
+
+        cont.invokeOnCancellation {
+            call.cancel()
+        }
+    }
+
 }

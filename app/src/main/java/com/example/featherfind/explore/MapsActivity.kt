@@ -3,19 +3,25 @@ package com.example.featherfind.explore
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import android.location.Address
 import android.location.Geocoder
 import android.location.Location
 import android.os.Bundle
 import android.util.Log
-import android.widget.SearchView
 import android.widget.SeekBar
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.example.featherfind.R
 import com.example.featherfind.databinding.ActivityMapsBinding
+import com.example.featherfind.explore.BirdRepository.getGoogleDirections
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -29,6 +35,11 @@ import kotlinx.coroutines.tasks.await
 import java.io.IOException
 import java.util.Locale
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.Marker
+import com.google.android.gms.maps.model.PolylineOptions
+import com.google.maps.android.PolyUtil
+import org.json.JSONException
+import org.json.JSONObject
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
@@ -37,8 +48,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private val LOCATION_PERMISSION_REQUEST_CODE = 1002
     private lateinit var viewModel: HotspotViewModel
-    private var maxDistance: Float = Float.MAX_VALUE
+    private var maxDistance: Float = 50000f  // 50km in meters
     private var userLocation: LatLng = LatLng(0.0, 0.0)
+    private var allHotspots: List<Hotspot> = listOf()
+    private var travelDistance: String = ""
+    private var travelTime: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,12 +67,15 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
         viewModel.hotspotList.observe(this) { hotspots ->
-            addHotspotsToMap(hotspots)
+            allHotspots = hotspots ?: listOf()
+            filterHotspotsByDistance()
+
         }
         distanceSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 maxDistance = progress.toFloat()
                 filterHotspotsByDistance()
+                distanceSeekBar.max = 50000
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
@@ -67,17 +84,16 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         // Request the user's location
         requestUserLocation()
     }
-private var allHotspots: List<Hotspot> = listOf()
 
     private fun filterHotspotsByDistance() {
         val filteredHotspots = allHotspots.filter { hotspot ->
-            val hotspotLocation = LatLng(hotspot.latitude, hotspot.longitude)
-            // Assuming you have a method or variable `userLocation` that holds the LatLng of the user
+            val hotspotLocation = LatLng(hotspot.longitude, hotspot.latitude)
             val distance = distanceBetween(userLocation, hotspotLocation)
             distance <= maxDistance
         }
         updateMapMarkers(filteredHotspots)
     }
+
     private fun distanceBetween(point1: LatLng, point2: LatLng): Float {
         val results = FloatArray(1)
         Location.distanceBetween(
@@ -87,29 +103,48 @@ private var allHotspots: List<Hotspot> = listOf()
         )
         return results[0]
     }
-private fun updateMapMarkers(hotspots: List<Hotspot>) {
-    mMap.clear()
-    for (hotspot in hotspots) {
-        val hotspotLocation = LatLng(hotspot.latitude, hotspot.longitude)
-        mMap.addMarker(
-            MarkerOptions()
-                .position(hotspotLocation)
-                .title(hotspot.name)
-                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
-        )
-    }
-}
-    private fun addHotspotsToMap(hotspots: List<Hotspot>?) {
-        if (!hotspots.isNullOrEmpty()) {
-            allHotspots = hotspots
-            updateMapMarkers(allHotspots)
-        } else {
-            Log.d("MapsActivity", "No hotspots to add to the map.")
+
+
+    private fun drawRoute(directions: String) {
+        try {
+            val jsonResponse = JSONObject(directions)
+            val routesArray = jsonResponse.getJSONArray("routes")
+
+            if (routesArray.length() > 0) {
+                val route = routesArray.getJSONObject(0)
+                val legs = route.getJSONArray("legs")
+
+                if (legs.length() > 0) {
+                    val leg = legs.getJSONObject(0)
+                    travelDistance = leg.getJSONObject("distance").getString("text")
+                    travelTime = leg.getJSONObject("duration").getString("text")
+                }
+
+                val poly = route.getJSONObject("overview_polyline")
+                val polyline = poly.getString("points")
+
+                val decodedPath = PolyUtil.decode(polyline)
+
+                mMap.addPolyline(PolylineOptions().addAll(decodedPath))
+
+                // Show travel distance and time to user (You may want to customize this part)
+                Toast.makeText(this, "Distance: $travelDistance, Time: $travelTime", Toast.LENGTH_LONG).show()
+            } else {
+                Log.e("MapsActivity", "No routes available.")
+            }
+        } catch (e: JSONException) {
+            Log.e("MapsActivity", "JSON parsing error: ${e.message}")
         }
     }
 
-    private fun drawRouteTo(destination: LatLng) {
-        // Use Google Directions API to get the route and draw it on the map
+
+    suspend fun getDirections(context: Context, origin: LatLng, destination: LatLng) {
+        val response = getGoogleDirections(context, origin, destination)
+        if (response != null) {
+            drawRoute(response)
+        } else {
+            Log.e("MapsActivity", "Google Directions API returned null.")
+        }
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
@@ -131,12 +166,32 @@ private fun updateMapMarkers(hotspots: List<Hotspot>) {
             }
             mMap.isMyLocationEnabled = true
         }
-        mMap.setOnMarkerClickListener { marker ->
-            val destination = marker.position
+        updateMapMarkers(allHotspots)  // Ensure markers are added as soon as map is ready
+        mMap.setOnMarkerClickListener { marker -> onMarkerClick(marker) }
+    }
 
-            // call a function to draw the best route
-            drawRouteTo(destination)
-            false
+    private fun updateMapMarkers(hotspots: List<Hotspot>) {
+        mMap.clear()
+        for (hotspot in hotspots) {
+            val hotspotLocation = LatLng(hotspot.longitude, hotspot.latitude)
+
+            // Get the drawable resource
+            val drawable = ContextCompat.getDrawable(this, R.drawable.baseline_location_on_24)!!
+
+            // Convert the drawable to a bitmap
+            val bitmap = drawableToBitmap(drawable)
+
+            // Create a BitmapDescriptor from the bitmap
+            val markerIcon = BitmapDescriptorFactory.fromBitmap(bitmap)
+
+            // Add the marker to the map with the custom icon
+            mMap.addMarker(
+                MarkerOptions()
+                    .position(hotspotLocation)
+                    .title(hotspot.name)
+                    .icon(markerIcon)
+            )
+            mMap.moveCamera(CameraUpdateFactory.newLatLng(userLocation))
         }
     }
 
@@ -171,7 +226,7 @@ private fun updateMapMarkers(hotspots: List<Hotspot>) {
                     val location = fusedLocationClient.lastLocation.await()
                     if (location != null) {
                         // Get the user's location
-                         userLocation = LatLng(location.latitude, location.longitude)
+                        userLocation = LatLng(location.latitude, location.longitude)
                         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 10f))
 
                         // Determine the region code based on the user's location
@@ -197,7 +252,8 @@ private fun updateMapMarkers(hotspots: List<Hotspot>) {
     private fun determineRegionCode(context: Context, location: Location): String {
         val geocoder = Geocoder(context, Locale.getDefault())
         try {
-            val addresses: List<Address>? = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+            val addresses: List<Address>? =
+                geocoder.getFromLocation(location.latitude, location.longitude, 1)
             if (!addresses.isNullOrEmpty()) {
                 // Get the first address, which is usually the most accurate one
                 val address = addresses[0]
@@ -226,5 +282,29 @@ private fun updateMapMarkers(hotspots: List<Hotspot>) {
             ),
             LOCATION_PERMISSION_REQUEST_CODE
         )
+    }
+    fun drawableToBitmap(drawable: Drawable): Bitmap {
+        if (drawable is BitmapDrawable) {
+            return drawable.bitmap
+        }
+
+        val bitmap = Bitmap.createBitmap(
+            drawable.intrinsicWidth,
+            drawable.intrinsicHeight,
+            Bitmap.Config.ARGB_8888
+        )
+        val canvas = Canvas(bitmap)
+        drawable.setBounds(0, 0, canvas.width, canvas.height)
+        drawable.draw(canvas)
+
+        return bitmap
+    }
+
+    private fun onMarkerClick(marker: Marker): Boolean {
+        val destination = marker.position
+        lifecycleScope.launch {
+            getDirections(this@MapsActivity, userLocation, destination)
+        }
+        return true
     }
 }

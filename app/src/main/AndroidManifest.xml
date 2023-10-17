@@ -14,11 +14,12 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.FeatherFind"
-        tools:targetApi="31">
+        tools:targetApi="tiramisu"
+        android:enableOnBackInvokedCallback="true">
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyBiJlSuc30QV3x9chgqSifddom-w0n3bjk" />
+            android:value="AIzaSyDiLQ5rVVyA-bhr-LPvKkTBkoIHqZoQWd0" />
 
         <activity android:name=".explore.MapsActivity" />
 
