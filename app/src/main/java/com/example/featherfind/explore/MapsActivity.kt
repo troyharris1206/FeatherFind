@@ -14,10 +14,9 @@ import android.os.Bundle
 import android.text.Html
 import android.util.Log
 import android.widget.ArrayAdapter
+import android.widget.ListView
 import android.widget.SeekBar
 import android.widget.TextView
-import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -39,9 +38,11 @@ import kotlinx.coroutines.tasks.await
 import java.io.IOException
 import java.util.Locale
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.Polyline
 import com.google.android.gms.maps.model.PolylineOptions
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.maps.android.PolyUtil
 import org.json.JSONException
 import org.json.JSONObject
@@ -142,9 +143,23 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 val poly = route.getJSONObject("overview_polyline")
                 val polyline = poly.getString("points")
                 val decodedPath = PolyUtil.decode(polyline)
-                mMap.addPolyline(PolylineOptions().addAll(decodedPath))
                 currentPolyline = mMap.addPolyline(PolylineOptions().addAll(decodedPath))
 
+
+                // Create LatLngBounds.Builder and include all route points
+                val builder = LatLngBounds.Builder()
+                for (point in decodedPath) {
+                    builder.include(point)
+                }
+                // Build the LatLngBounds
+                val bounds = builder.build()
+
+                // Create a CameraUpdate with padding
+                val padding = 50 // offset from edges of the map in pixels
+                val cu = CameraUpdateFactory.newLatLngBounds(bounds, padding)
+
+                // Update the camera position
+                mMap.moveCamera(cu)
             } else {
                 Log.e("MapsActivity", "No routes available.")
             }
@@ -154,25 +169,21 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun showDirectionSteps() {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Direction Steps")
+        val bottomSheetDialog = BottomSheetDialog(this)
+        val bottomSheetView = layoutInflater.inflate(R.layout.bottom_sheet_layout, null)
 
         val arrayAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, directionSteps)
-        builder.setAdapter(arrayAdapter, null)
+        bottomSheetView.findViewById<ListView>(R.id.listView).adapter = arrayAdapter
 
-        val footerView = layoutInflater.inflate(R.layout.dialog_footer, null)
-        footerView.findViewById<TextView>(R.id.travel_distance).text = "Distance: $travelDistance"
-        footerView.findViewById<TextView>(R.id.travel_time).text = "Time: $travelTime"
+        bottomSheetView.findViewById<TextView>(R.id.travel_distance).text = "Distance: $travelDistance"
+        bottomSheetView.findViewById<TextView>(R.id.travel_time).text = "Time: $travelTime"
 
-        builder.setView(footerView)
-
-        builder.setPositiveButton("OK") { dialog, which -> dialog.dismiss() }
-
-        builder.show()
+        bottomSheetDialog.setContentView(bottomSheetView)
+        bottomSheetDialog.show()
     }
 
 
-    suspend fun getDirections(context: Context, origin: LatLng, destination: LatLng) {
+    private suspend fun getDirections(context: Context, origin: LatLng, destination: LatLng) {
         val response = getGoogleDirections(context, origin, destination)
         if (response != null) {
             drawRoute(response)
@@ -250,7 +261,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     Manifest.permission.ACCESS_COARSE_LOCATION
                 ) != PackageManager.PERMISSION_GRANTED
             ) {
-                // TODO: Consider calling ActivityCompat#requestPermissions
                 return
             }
 
@@ -291,12 +301,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             if (!addresses.isNullOrEmpty()) {
                 // Get the first address, which is usually the most accurate one
                 val address = addresses[0]
-
-                // Extract the country code
-                val countryCode = address.countryCode ?: "unknown_country"
-
                 // Use the country code as the region code
-                return countryCode
+                return address.countryCode ?: "unknown_country"
             }
         } catch (e: IOException) {
             e.printStackTrace()

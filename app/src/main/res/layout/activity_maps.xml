@@ -18,55 +18,17 @@
         android:layout_height="0dp"
         android:layout_weight="1" />
 
-    <!-- Km markers as TextViews -->
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp">
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="0 km" />
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="10 km" />
-
-        <TextView
-            android:layout_width="3dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="20 km" />
-        <TextView
-            android:layout_width="3dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="30 km" />
-        <TextView
-            android:layout_width="3dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="40 km" />
-        <TextView
-            android:layout_width="3dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="50 km" />
-    </LinearLayout>
-
     <!-- SeekBar -->
     <SeekBar
         android:id="@+id/distanceSeekBar"
+        style="@style/Widget.AppCompat.SeekBar"
         android:layout_width="401dp"
         android:layout_height="45dp"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
-        android:layout_marginBottom="8dp">
+        android:layout_marginBottom="8dp"
+        android:progressTint="#F44336"
+        android:tooltipText="Filter Hotspots">
         <!-- other attributes -->
     </SeekBar>
 

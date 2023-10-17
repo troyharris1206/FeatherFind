@@ -13,7 +13,7 @@
             android:background="#FF5722"
             android:gravity="center"
             android:text="Explore"
-            android:textColor="#000000"
+            android:textColor="#FFFFFF"
             android:textSize="24sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -34,8 +34,8 @@
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerView"
-            android:layout_width="416dp"
-            android:layout_height="640dp"
+            android:layout_width="414dp"
+            android:layout_height="549dp"
             android:layout_marginTop="32dp"
             android:visibility="visible"
             app:layout_constraintEnd_toEndOf="parent"
@@ -52,8 +52,10 @@
             android:visibility="invisible"
             app:layout_constraintBottom_toBottomOf="@+id/recyclerView"
             app:layout_constraintEnd_toEndOf="@+id/recyclerView"
+            app:layout_constraintHorizontal_bias="0.491"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/recyclerView" />
+            app:layout_constraintTop_toTopOf="@+id/recyclerView"
+            app:layout_constraintVertical_bias="0.0" />
 
         <Button
             android:id="@+id/btnHotspots"
