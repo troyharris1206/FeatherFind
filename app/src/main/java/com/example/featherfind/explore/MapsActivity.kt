@@ -11,9 +11,13 @@ import android.location.Address
 import android.location.Geocoder
 import android.location.Location
 import android.os.Bundle
+import android.text.Html
 import android.util.Log
+import android.widget.ArrayAdapter
 import android.widget.SeekBar
+import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -36,6 +40,7 @@ import java.io.IOException
 import java.util.Locale
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.Marker
+import com.google.android.gms.maps.model.Polyline
 import com.google.android.gms.maps.model.PolylineOptions
 import com.google.maps.android.PolyUtil
 import org.json.JSONException
@@ -53,6 +58,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private var allHotspots: List<Hotspot> = listOf()
     private var travelDistance: String = ""
     private var travelTime: String = ""
+    private var directionSteps: ArrayList<String> = ArrayList()  // To hold direction steps
+    private var currentPolyline: Polyline? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -104,11 +111,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         return results[0]
     }
 
-
     private fun drawRoute(directions: String) {
         try {
             val jsonResponse = JSONObject(directions)
             val routesArray = jsonResponse.getJSONArray("routes")
+
+            // Clear previous direction steps
+            directionSteps.clear()
 
             if (routesArray.length() > 0) {
                 val route = routesArray.getJSONObject(0)
@@ -118,23 +127,48 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     val leg = legs.getJSONObject(0)
                     travelDistance = leg.getJSONObject("distance").getString("text")
                     travelTime = leg.getJSONObject("duration").getString("text")
-                }
 
+                    val steps = leg.getJSONArray("steps")
+                    for (i in 0 until steps.length()) {
+                        val step = steps.getJSONObject(i)
+                        var instruction = step.getString("html_instructions")
+                        instruction = Html.fromHtml(instruction).toString()
+                        directionSteps.add(instruction)
+                    }
+                    // Show direction steps to user
+                    showDirectionSteps()
+                }
+                currentPolyline?.remove()
                 val poly = route.getJSONObject("overview_polyline")
                 val polyline = poly.getString("points")
-
                 val decodedPath = PolyUtil.decode(polyline)
-
                 mMap.addPolyline(PolylineOptions().addAll(decodedPath))
+                currentPolyline = mMap.addPolyline(PolylineOptions().addAll(decodedPath))
 
-                // Show travel distance and time to user (You may want to customize this part)
-                Toast.makeText(this, "Distance: $travelDistance, Time: $travelTime", Toast.LENGTH_LONG).show()
             } else {
                 Log.e("MapsActivity", "No routes available.")
             }
         } catch (e: JSONException) {
             Log.e("MapsActivity", "JSON parsing error: ${e.message}")
         }
+    }
+
+    private fun showDirectionSteps() {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Direction Steps")
+
+        val arrayAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, directionSteps)
+        builder.setAdapter(arrayAdapter, null)
+
+        val footerView = layoutInflater.inflate(R.layout.dialog_footer, null)
+        footerView.findViewById<TextView>(R.id.travel_distance).text = "Distance: $travelDistance"
+        footerView.findViewById<TextView>(R.id.travel_time).text = "Time: $travelTime"
+
+        builder.setView(footerView)
+
+        builder.setPositiveButton("OK") { dialog, which -> dialog.dismiss() }
+
+        builder.show()
     }
 
 
@@ -301,6 +335,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun onMarkerClick(marker: Marker): Boolean {
+        currentPolyline?.remove()
         val destination = marker.position
         lifecycleScope.launch {
             getDirections(this@MapsActivity, userLocation, destination)

@@ -6,16 +6,31 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+        <TextView
+            android:id="@+id/headerText"
+            android:layout_width="409dp"
+            android:layout_height="82dp"
+            android:background="#FF5722"
+            android:gravity="center"
+            android:text="Explore"
+            android:textColor="#000000"
+            android:textSize="24sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
         <EditText
             android:id="@+id/searchBird"
             android:layout_width="286dp"
             android:layout_height="57dp"
-            android:layout_marginBottom="28dp"
+            android:layout_marginTop="12dp"
             android:ems="10"
             android:hint="Search"
             android:inputType="text"
-            app:layout_constraintBottom_toTopOf="@+id/recyclerView"
-            app:layout_constraintStart_toStartOf="parent" />
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.128"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/headerText" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerView"
@@ -44,12 +59,13 @@
             android:id="@+id/btnHotspots"
             android:layout_width="75dp"
             android:layout_height="53dp"
-            android:layout_marginBottom="35dp"
+            android:layout_marginTop="14dp"
+            android:layout_marginBottom="36dp"
             android:background="@drawable/map_location_dot_solid"
             app:layout_constraintBottom_toTopOf="@+id/recyclerView"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.48"
             app:layout_constraintStart_toEndOf="@+id/searchBird"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="1.0" />
+            app:layout_constraintTop_toBottomOf="@+id/headerText" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
