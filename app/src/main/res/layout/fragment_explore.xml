@@ -4,12 +4,13 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/frameLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:theme="@style/Theme.AppCompat.DayNight.DarkActionBar">
 
         <TextView
             android:id="@+id/headerText"
-            android:layout_width="409dp"
-            android:layout_height="82dp"
+            android:layout_width="410dp"
+            android:layout_height="86dp"
             android:background="#FF5722"
             android:gravity="center"
             android:text="Explore"
@@ -21,12 +22,14 @@
 
         <EditText
             android:id="@+id/searchBird"
+            style="@style/Widget.AppCompat.AutoCompleteTextView"
             android:layout_width="286dp"
             android:layout_height="57dp"
             android:layout_marginTop="12dp"
             android:ems="10"
             android:hint="Search"
             android:inputType="text"
+            android:textColor="@color/black"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.128"
             app:layout_constraintStart_toStartOf="parent"

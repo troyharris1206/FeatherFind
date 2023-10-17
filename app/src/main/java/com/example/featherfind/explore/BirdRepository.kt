@@ -112,7 +112,6 @@ object BirdRepository {
             .addQueryParameter("destination", "${destination.latitude},${destination.longitude}")
             .addQueryParameter("key", apiKey)
             .build()
-        println("Full URL: $url")
         val request = Request.Builder().url(url).build()
 
         val call = okHttpClient.newCall(request)
@@ -129,10 +128,8 @@ object BirdRepository {
                 }
             }
         })
-
         cont.invokeOnCancellation {
             call.cancel()
         }
     }
-
 }

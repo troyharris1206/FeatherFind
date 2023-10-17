@@ -56,14 +56,12 @@ object DataParser {
         } catch (e: IOException) {
             Log.e("DataParser", "Error reading histogram data: ${e.message}")
         }
-
         return histogramData
     }
     fun parseApiResponse(response: String): List<Hotspot> {
-        // Log the API URL for debugging purposes
         return response.split("\n").mapNotNull { line ->
             val parts = line.split(",")
-            if (parts.size >= 8) { // Adjusted index to 8 to ensure all necessary parts are present
+            if (parts.size >= 8) {
                 val id = parts[0]
                 val name = parts[6]
                 val latitude = parts[4].toDoubleOrNull()
