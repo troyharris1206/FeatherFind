@@ -57,7 +57,7 @@
 
             <TextView
                 android:id="@+id/tvFirstName"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="20dp"
                 android:layout_marginLeft="50dp"
                 android:layout_marginRight="50dp"
                 android:textSize="20dp"
@@ -68,18 +68,18 @@
 
             <EditText
                 android:id="@+id/etFirstname"
-                android:layout_marginTop="5dp"
+                android:layout_marginTop="15dp"
                 android:layout_marginLeft="50dp"
                 android:layout_marginRight="50dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:ems="10"
                 android:inputType="text"
-                android:text="Temporary" />
+                android:text="" />
 
             <TextView
                 android:id="@+id/tvSurname"
-                android:layout_marginTop="5dp"
+                android:layout_marginTop="15dp"
                 android:layout_marginLeft="50dp"
                 android:layout_marginRight="50dp"
                 android:textSize="20dp"
@@ -90,37 +90,14 @@
 
             <EditText
                 android:id="@+id/etSurname"
-                android:layout_marginTop="5dp"
+                android:layout_marginTop="15dp"
                 android:layout_marginLeft="50dp"
                 android:layout_marginRight="50dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:ems="10"
                 android:inputType="text"
-                android:text="Details" />
-
-            <TextView
-                android:id="@+id/tvUsername"
-                android:layout_marginTop="5dp"
-                android:layout_marginLeft="50dp"
-                android:layout_marginRight="50dp"
-                android:textSize="20dp"
-                android:textColor="@color/black"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Username" />
-
-            <EditText
-                android:id="@+id/etUsername"
-                android:layout_marginTop="5dp"
-                android:layout_marginLeft="50dp"
-                android:layout_marginRight="50dp"
-
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:ems="10"
-                android:inputType="text"
-                android:text="TemporaryDetails@gmail.com" />
+                android:text="" />
 
             <Button
                 android:id="@+id/btnApplyChanges"
@@ -136,7 +113,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:orientation="horizontal"
-                android:layout_marginTop="2dp">
+                android:layout_marginTop="12dp">
 
 
                 <Button
