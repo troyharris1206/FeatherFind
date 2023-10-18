@@ -3,11 +3,6 @@
   <component name="WizardSettings">
     <option name="children">
       <map>
-        <entry key="imageWizard">
-          <value>
-            <PersistentState />
-          </value>
-        </entry>
         <entry key="vectorWizard">
           <value>
             <PersistentState>
@@ -23,7 +18,7 @@
                                 <PersistentState>
                                   <option name="values">
                                     <map>
-                                      <entry key="url" value="file:/$USER_HOME$/AppData/Local/Android/Sdk/icons/material/materialicons/crop_portrait/baseline_crop_portrait_24.xml" />
+                                      <entry key="url" value="file:/$USER_HOME$/AppData/Local/Android/Sdk/icons/material/materialicons/location_on/baseline_location_on_24.xml" />
                                     </map>
                                   </option>
                                 </PersistentState>
@@ -33,8 +28,8 @@
                         </option>
                         <option name="values">
                           <map>
-                            <entry key="outputName" value="ic_layount_background" />
-                            <entry key="sourceFile" value="C:\Users\guibe\Desktop\7x\GitHub\FeatherFind" />
+                            <entry key="outputName" value="baseline_location_on_24" />
+                            <entry key="sourceFile" value="C:\Users\Jordan\Documents\GitHub\FeatherFind" />
                           </map>
                         </option>
                       </PersistentState>
