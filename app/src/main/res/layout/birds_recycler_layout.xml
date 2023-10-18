@@ -1,0 +1,87 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/linear_layout_border"
+    android:orientation="vertical"
+    android:layout_marginTop="10dp"
+    android:layout_marginLeft="2dp"
+    android:layout_marginRight="2dp">
+
+
+    <TextView
+        android:id="@+id/txtBirdNameHeader"
+        android:layout_marginLeft="2dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Bird Name:"
+        android:textStyle="bold"/>
+
+    <TextView
+        android:id="@+id/txtBirdName"
+        android:layout_marginLeft="2dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="" />
+    <TextView
+        android:id="@+id/txtBirdSpeciesHeader"
+        android:layout_marginLeft="2dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Species:"
+        android:textStyle="bold"/>
+
+    <TextView
+        android:id="@+id/txtBirdSpecies"
+        android:layout_marginLeft="2dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="" />
+
+    <TextView
+        android:id="@+id/txtBirdDateHeader"
+        android:layout_marginLeft="2dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Date of Sighting:"
+        android:textStyle="bold"/>
+
+
+    <TextView
+        android:id="@+id/txtBirdDate"
+        android:layout_marginLeft="2dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="" />
+
+    <TextView
+        android:id="@+id/txtBirdDescriptionHeader"
+        android:layout_marginLeft="2dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Description:"
+        android:textStyle="bold"/>
+
+    <TextView
+        android:id="@+id/txtBirdDescription"
+        android:layout_marginLeft="2dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="" />
+
+    <TextView
+        android:id="@+id/txtBirdTimeHeader"
+        android:layout_marginLeft="2dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Time of Sighting:"
+        android:textStyle="bold"/>
+
+    <TextView
+        android:id="@+id/txtBirdTime"
+        android:layout_marginLeft="2dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="" />
+</LinearLayout>

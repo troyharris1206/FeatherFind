@@ -143,6 +143,8 @@ class Profile : Fragment() {
                             Toast.LENGTH_SHORT
                         ).show()
                     }
+            }else{
+                Toast.makeText(context, "Please fill in all fields", Toast.LENGTH_SHORT).show()
             }
         }
     }
