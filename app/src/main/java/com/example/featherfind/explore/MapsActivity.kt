@@ -63,7 +63,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var fusedLocationClient: FusedLocationProviderClient  // Location client
     private val LOCATION_PERMISSION_REQUEST_CODE = 1002  // Request code for location permissions
     private lateinit var viewModel: HotspotViewModel  // ViewModel for hotspots
-    private var maxDistance: Float = 50000f  // Max distance to filter hotspots (in meters)
+    private var maxDistance: Float = 1f  // Max distance to filter hotspots (in meters)
     private var userLocation: LatLng = LatLng(0.0, 0.0)  // User's location
     private var allHotspots: List<Hotspot> = listOf()  // List to store all hotspots
     private var travelDistance: String = ""  // Travel distance
@@ -102,25 +102,42 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             filterHotspotsByDistance()
         }
 
-        // Initialize distance filter SeekBar
+        requestUserLocation()
+
         val distanceSeekBar: SeekBar = findViewById(R.id.distanceSeekBar)
+
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            // Fetch maxDistance from Firestore
+            val userDocument = db.collection("Users").document(currentUser.uid)
+            userDocument.get()
+                .addOnSuccessListener { document ->
+                    if (document != null && document.exists()) {
+                        val storedMaxDistance = document.getString("maxDistance")?.toFloatOrNull()
+                        if (storedMaxDistance != null) {
+                            maxDistance = storedMaxDistance
+                            Log.d("Firestore", "Fetched maxDistance: $maxDistance")
+
+                            // Set SeekBar max and progress here
+                            distanceSeekBar.max = maxDistance.toInt()
+                            distanceSeekBar.progress = maxDistance.toInt()
+                        } else {
+                            Log.d("Firestore", "maxDistance in DB is null")
+                        }
+                    } else {
+                        Log.d("Firestore", "Document does not exist")
+                    }
+                }
+                .addOnFailureListener { e ->
+                    Log.w("Firestore", "Error getting document", e)
+                }
+        }
+        distanceSeekBar.max = maxDistance.toInt()
+
+        // Set SeekBar Listener
         distanceSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 maxDistance = progress.toFloat()
-
-                val currentUser = auth.currentUser
-                if (currentUser != null) {
-                    // Update Firestore
-                    val userDocument = db.collection("users").document(currentUser.uid)
-                    userDocument.update("maxDistance", maxDistance.toString())
-                        .addOnSuccessListener {
-                            Log.d("Firestore", "DocumentSnapshot successfully updated!")
-                        }
-                        .addOnFailureListener { e ->
-                            Log.w("Firestore", "Error updating document", e)
-                        }
-                }
-
                 filterHotspotsByDistance()
             }
 
@@ -132,8 +149,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 // Optional
             }
         })
-        // Request the user's current location
-        requestUserLocation()
     }
 
     /**
@@ -248,65 +263,87 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
      * @param hotspotName The name of the hotspot for which directions are displayed.
      */
     private fun showDirectionSteps(hotspotName: String) {
+        // Initialize Firebase Auth and Firestore
+        val auth = FirebaseAuth.getInstance()
+        val firestore = FirebaseFirestore.getInstance()
+
+        // Fetch the current user
+        val currentUser = auth.currentUser
+
         // Initialize bottom sheet dialog and its view
         val bottomSheetDialog = BottomSheetDialog(this)
         val bottomSheetView = layoutInflater.inflate(R.layout.bottom_sheet_layout, null)
 
-        // Set up ListView adapter to show direction steps
-        val arrayAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, directionSteps)
-        val listView = bottomSheetView.findViewById<ListView>(R.id.listView)
-        listView.adapter = arrayAdapter
+        // Fetch user preference for distance unit (either "miles" or "kilometers")
+        firestore.collection("Users").document(currentUser!!.uid).get()
+            .addOnSuccessListener { document ->
+                val preferredUnit = document.getString("measurementSystem") ?: "Metric"
 
-        // Display hotspot name
-        val hotspotNameTextView = bottomSheetView.findViewById<TextView>(R.id.hotspot_name)
-        hotspotNameTextView.text = "Hotspot: $hotspotName"
+                // Extract numerical part from the string (assuming the format is always like "4.2 km")
+                val numericalPart = travelDistance.split(" ")[0]
 
-        // Display travel distance and time
-        val travelDistanceTextView = bottomSheetView.findViewById<TextView>(R.id.travel_distance)
-        val travelTimeTextView = bottomSheetView.findViewById<TextView>(R.id.travel_time)
-        travelDistanceTextView.text = "Distance: $travelDistance"
-        travelTimeTextView.text = "Travel Time: $travelTime"
-
-        // Set the bottom sheet dialog content
-        bottomSheetDialog.setContentView(bottomSheetView)
-
-        // Get the BottomSheetBehavior and configure its properties
-        val bottomSheetInternal = bottomSheetDialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
-        behavior = BottomSheetBehavior.from(bottomSheetInternal!!)
-
-        // Set initial height to 1/3 of the screen
-        originalPeekHeight = resources.displayMetrics.heightPixels / 3
-        behavior?.peekHeight = originalPeekHeight
-
-        behavior?.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
-            override fun onStateChanged(bottomSheet: View, newState: Int) {
-                when (newState) {
-                    BottomSheetBehavior.STATE_COLLAPSED -> {
-                        // Set the height to the hotspot name height when collapsed
-                        behavior?.peekHeight = hotspotNameTextView.height
-                    }
-                    BottomSheetBehavior.STATE_EXPANDED -> {
-                        // Restore the original peek height when expanded
-                        behavior?.peekHeight = originalPeekHeight
-                    }
-                    BottomSheetBehavior.STATE_DRAGGING -> {
-
-                    }
-                    BottomSheetBehavior.STATE_SETTLING -> {
-
-                    }
-                    else -> {}
+                // Convert distance to miles if necessary
+                val displayedTravelDistance = if (preferredUnit == "Imperial") {
+                    val miles = numericalPart.toDouble() * 0.621371  // Conversion factor for km to miles
+                    String.format("%.2f miles", miles)
+                } else {
+                    "$numericalPart km"
                 }
-            }
 
-            override fun onSlide(bottomSheet: View, slideOffset: Float) {
-                if (slideOffset < 0) { // Indicates that the sheet is being swiped down
-                    behavior?.peekHeight = hotspotNameTextView.height // Set the height to the hotspot name height
-                }
-            }
-        })
+                // Set up ListView adapter to show direction steps
+                val arrayAdapter =
+                    ArrayAdapter(this, android.R.layout.simple_list_item_1, directionSteps)
+                val listView = bottomSheetView.findViewById<ListView>(R.id.listView)
+                listView.adapter = arrayAdapter
 
-        bottomSheetDialog.show()
+                // Display hotspot name
+                val hotspotNameTextView = bottomSheetView.findViewById<TextView>(R.id.hotspot_name)
+                hotspotNameTextView.text = "Hotspot: $hotspotName"
+
+                // Display travel distance and time
+                val travelDistanceTextView =
+                    bottomSheetView.findViewById<TextView>(R.id.travel_distance)
+                val travelTimeTextView = bottomSheetView.findViewById<TextView>(R.id.travel_time)
+                travelDistanceTextView.text = "Distance: $displayedTravelDistance"
+                travelTimeTextView.text = "Travel Time: $travelTime"
+
+                // Set the bottom sheet dialog content
+                bottomSheetDialog.setContentView(bottomSheetView)
+
+                // Get the BottomSheetBehavior and configure its properties
+                val bottomSheetInternal =
+                    bottomSheetDialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
+                behavior = BottomSheetBehavior.from(bottomSheetInternal!!)
+
+                // Set initial height to 1/3 of the screen
+                originalPeekHeight = resources.displayMetrics.heightPixels / 3
+                behavior?.peekHeight = originalPeekHeight
+
+                behavior?.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
+                    override fun onStateChanged(bottomSheet: View, newState: Int) {
+                        when (newState) {
+                            BottomSheetBehavior.STATE_COLLAPSED -> {
+                                // Set the height to the hotspot name height when collapsed
+                                behavior?.peekHeight = hotspotNameTextView.height
+                            }
+                            BottomSheetBehavior.STATE_EXPANDED -> {
+                                // Restore the original peek height when expanded
+                                behavior?.peekHeight = originalPeekHeight
+                            }
+                            else -> {}
+                        }
+                    }
+
+                    override fun onSlide(bottomSheet: View, slideOffset: Float) {
+                        if (slideOffset < 0) { // Indicates that the sheet is being swiped down
+                            behavior?.peekHeight =
+                                hotspotNameTextView.height // Set the height to the hotspot name height
+                        }
+                    }
+                })
+
+                bottomSheetDialog.show()
+            }
     }
 
     /**
