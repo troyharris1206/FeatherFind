@@ -13,6 +13,7 @@ import android.location.Location
 import android.os.Bundle
 import android.text.Html
 import android.util.Log
+import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.ListView
 import android.widget.SeekBar
@@ -42,6 +43,7 @@ import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.Polyline
 import com.google.android.gms.maps.model.PolylineOptions
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.maps.android.PolyUtil
 import org.json.JSONException
@@ -66,6 +68,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private var travelTime: String = ""  // Travel time
     private var directionSteps: ArrayList<String> = ArrayList()  // List to hold direction steps
     private var currentPolyline: Polyline? = null  // Polyline object to represent the route on the map
+    private var selectedHotspotName: String? = null
+    private var behavior: BottomSheetBehavior<View>? = null
+    private var originalPeekHeight: Int = 0
 
     /**
      * Called when the activity is created.
@@ -148,6 +153,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         return results[0]  // Return the calculated distance
     }
 
+
     /**
      * Draws the driving route on the map and shows direction steps, distance, and time.
      * The function parses a JSON response from a mapping service to retrieve route details.
@@ -185,7 +191,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     }
 
                     // Display the direction steps in a bottom sheet
-                    showDirectionSteps()
+                    if (selectedHotspotName != null) {
+                        showDirectionSteps(selectedHotspotName!!)
+                    } else {
+                        // Handle case where selectedHotspotName is null
+                        Log.e("MapsActivity", "No hotspot name available.")
+                    }
                 }
 
                 // Clear previous polyline if any
@@ -203,7 +214,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     builder.include(point)
                 }
                 val bounds = builder.build()
-                val padding = 50  // offset from edges of the map in pixels
+                val padding = 200  // offset from edges of the map in pixels
                 val cu = CameraUpdateFactory.newLatLngBounds(bounds, padding)
                 mMap.moveCamera(cu)
             } else {
@@ -215,25 +226,69 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     /**
-     * Displays a bottom sheet dialog containing the direction steps, total distance, and estimated travel time.
+     * This function displays direction steps in a bottom sheet dialog.
+     *
+     * @param hotspotName The name of the hotspot for which directions are displayed.
      */
-    private fun showDirectionSteps() {
+    private fun showDirectionSteps(hotspotName: String) {
         // Initialize bottom sheet dialog and its view
         val bottomSheetDialog = BottomSheetDialog(this)
         val bottomSheetView = layoutInflater.inflate(R.layout.bottom_sheet_layout, null)
 
         // Set up ListView adapter to show direction steps
         val arrayAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, directionSteps)
-        bottomSheetView.findViewById<ListView>(R.id.listView).adapter = arrayAdapter
+        val listView = bottomSheetView.findViewById<ListView>(R.id.listView)
+        listView.adapter = arrayAdapter
+
+        // Display hotspot name
+        val hotspotNameTextView = bottomSheetView.findViewById<TextView>(R.id.hotspot_name)
+        hotspotNameTextView.text = "Hotspot: $hotspotName"
 
         // Display travel distance and time
-        bottomSheetView.findViewById<TextView>(R.id.travel_distance).text =
-            "Distance: $travelDistance"
-        bottomSheetView.findViewById<TextView>(R.id.travel_time).text =
-            "Travel Time: $travelTime"
+        val travelDistanceTextView = bottomSheetView.findViewById<TextView>(R.id.travel_distance)
+        val travelTimeTextView = bottomSheetView.findViewById<TextView>(R.id.travel_time)
+        travelDistanceTextView.text = "Distance: $travelDistance"
+        travelTimeTextView.text = "Travel Time: $travelTime"
 
-        // Show the bottom sheet dialog
+        // Set the bottom sheet dialog content
         bottomSheetDialog.setContentView(bottomSheetView)
+
+        // Get the BottomSheetBehavior and configure its properties
+        val bottomSheetInternal = bottomSheetDialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
+        behavior = BottomSheetBehavior.from(bottomSheetInternal!!)
+
+        // Set initial height to 1/3 of the screen
+        originalPeekHeight = resources.displayMetrics.heightPixels / 3
+        behavior?.peekHeight = originalPeekHeight
+
+        behavior?.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
+            override fun onStateChanged(bottomSheet: View, newState: Int) {
+                when (newState) {
+                    BottomSheetBehavior.STATE_COLLAPSED -> {
+                        // Set the height to the hotspot name height when collapsed
+                        behavior?.peekHeight = hotspotNameTextView.height
+                    }
+                    BottomSheetBehavior.STATE_EXPANDED -> {
+                        // Restore the original peek height when expanded
+                        behavior?.peekHeight = originalPeekHeight
+                    }
+                    BottomSheetBehavior.STATE_DRAGGING -> {
+
+                    }
+                    BottomSheetBehavior.STATE_SETTLING -> {
+
+                    }
+                    else -> {}
+                }
+            }
+
+            override fun onSlide(bottomSheet: View, slideOffset: Float) {
+                if (slideOffset < 0) { // Indicates that the sheet is being swiped down
+                    behavior?.peekHeight = hotspotNameTextView.height // Set the height to the hotspot name height
+                }
+            }
+        })
+
         bottomSheetDialog.show()
     }
 
@@ -259,7 +314,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
      * Configures initial settings for the map and sets listeners.
      */
     override fun onMapReady(googleMap: GoogleMap) {
-        Log.d("MapsActivity", "onMapReady called.")
         mMap = googleMap
 
         // Enable UI controls like zoom and current location button
@@ -285,7 +339,18 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         updateMapMarkers(allHotspots)
 
         // Set marker click listener
-        mMap.setOnMarkerClickListener { marker -> onMarkerClick(marker) }
+        mMap.setOnMarkerClickListener { marker ->
+            onMarkerClick(marker)
+            selectedHotspotName = marker.tag as? String ?: marker.title
+            false // or true, depending on whether you want to consume the event
+        }
+        // Add map click listener
+        mMap.setOnMapClickListener {
+            behavior?.apply {
+                state = BottomSheetBehavior.STATE_COLLAPSED
+                peekHeight = originalPeekHeight
+            }
+        }
     }
 
     /**
@@ -312,15 +377,18 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             val markerIcon = BitmapDescriptorFactory.fromBitmap(bitmap)
 
             // Add the marker with custom icon to the map
-            mMap.addMarker(
+            val marker = mMap.addMarker(
                 MarkerOptions()
                     .position(hotspotLocation)
                     .title(hotspot.name)
                     .icon(markerIcon)
             )
-            // Move the camera to the user's location
-            mMap.moveCamera(CameraUpdateFactory.newLatLng(userLocation))
+
+            // Attach the hotspot name as additional data to the marker
+            marker?.tag = hotspot.name
         }
+        // Move the camera to the user's location
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(userLocation))
     }
 
     /**
