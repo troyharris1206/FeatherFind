@@ -48,6 +48,8 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.maps.android.PolyUtil
 import org.json.JSONException
 import org.json.JSONObject
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 /**
  * MapsActivity: Activity to display Google Maps and hotspots.
@@ -83,6 +85,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         binding = ActivityMapsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        val db = FirebaseFirestore.getInstance()
+        val auth = FirebaseAuth.getInstance()
+
         // Initialize Map Fragment
         val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
@@ -99,18 +104,30 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
         // Initialize distance filter SeekBar
         val distanceSeekBar: SeekBar = findViewById(R.id.distanceSeekBar)
-        distanceSeekBar.max = maxDistance.toInt()
-        distanceSeekBar.progress = maxDistance.toInt()
-        // Listen to SeekBar changes
         distanceSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                maxDistance =
-                    progress.toFloat()  // Update maxDistance based on the SeekBar's progress
-                filterHotspotsByDistance()  // Filter hotspots based on the updated maxDistance
+                maxDistance = progress.toFloat()
+
+                val currentUser = auth.currentUser
+                if (currentUser != null) {
+                    // Update Firestore
+                    val userDocument = db.collection("users").document(currentUser.uid)
+                    userDocument.update("maxDistance", maxDistance.toString())
+                        .addOnSuccessListener {
+                            Log.d("Firestore", "DocumentSnapshot successfully updated!")
+                        }
+                        .addOnFailureListener { e ->
+                            Log.w("Firestore", "Error updating document", e)
+                        }
+                }
+
+                filterHotspotsByDistance()
             }
+
             override fun onStartTrackingTouch(seekBar: SeekBar?) {
                 // Optional
             }
+
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
                 // Optional
             }
