@@ -15,6 +15,7 @@ class AddSightingViewModel : ViewModel() {
 
     private var photoReference: String = ""
 
+    //Adds the sighting info added by the user into the db
     fun addSightingInfo(birdName: String, birdSpecies: String, dateOfSighting: String, timeOfSighting: String, sightingDescription: String){
 
         val db = FirebaseFirestore.getInstance()
@@ -23,6 +24,7 @@ class AddSightingViewModel : ViewModel() {
         val user = FirebaseAuth.getInstance().currentUser
         val uid = user?.uid
 
+        //Creating a hashMap for input into the db
         val sightingData = hashMapOf(
             "userUID" to uid,
             "birdName" to birdName,
@@ -33,6 +35,7 @@ class AddSightingViewModel : ViewModel() {
             "photoReference" to photoReference
         )
 
+        //Adds data to the db
         val userDocRef = db.collection("Sightings").document(System.currentTimeMillis().toString())
 
         userDocRef.set(sightingData)

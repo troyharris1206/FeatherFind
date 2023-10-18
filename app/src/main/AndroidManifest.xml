@@ -9,17 +9,14 @@
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/featherfind_logo"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@drawable/featherfind_logo_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.FeatherFind"
         tools:targetApi="31">
         <activity
             android:name=".ResetPassword"
-            android:exported="false" />
-        <activity
-            android:name=".VerifyAccount"
             android:exported="false" />
         <activity
             android:name=".Login"

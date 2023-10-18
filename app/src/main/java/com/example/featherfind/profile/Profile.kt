@@ -13,21 +13,15 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
+import androidx.navigation.fragment.findNavController
 import com.example.featherfind.GetStarted
+import com.example.featherfind.MainActivity
 import com.example.featherfind.R
 import com.example.featherfind.Users
+import com.example.featherfind.settings.Settings
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.auth.UserProfileChangeRequest
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.DocumentSnapshot
-import com.google.firebase.ktx.Firebase
-import com.google.firebase.storage.FirebaseStorage
-import com.google.firebase.storage.ktx.storage
 
 class Profile : Fragment() {
 
@@ -49,9 +43,10 @@ class Profile : Fragment() {
         firstNameEditText = view.findViewById(R.id.etFirstname)
         surnameEditText = view.findViewById(R.id.etSurname)
 
+        //Gets the logged in user
         val user = FirebaseAuth.getInstance().currentUser
 
-
+        //If there is a logged in user
         if (user != null) {
             val userId = FirebaseAuth.getInstance().currentUser?.uid
             val firestore = FirebaseFirestore.getInstance()
@@ -85,6 +80,12 @@ class Profile : Fragment() {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProvider(this).get(ProfileViewModel::class.java)
 
+        val navController = findNavController()
+        val btnSettings = requireView().findViewById<Button>(R.id.btnSettings)
+        btnSettings.setOnClickListener {
+            navController.navigate(R.id.navigation_settings)
+        }
+
         val deleteButton = requireView().findViewById<Button>(R.id.btnDeleteAccount)
         deleteButton.setOnClickListener {
             showPopup(requireContext()) // 'this' is the context of your activity
@@ -105,7 +106,7 @@ class Profile : Fragment() {
 
         }
 
-        val applyChangesButton = requireView().findViewById<Button>(R.id.btnApplyChanges)
+        val applyChangesButton = requireView().findViewById<Button>(R.id.btnApplySettings)
         val etFirstName = requireView().findViewById<EditText>(R.id.etFirstname)
         val etSurname = requireView().findViewById<EditText>(R.id.etSurname)
 
@@ -143,8 +144,6 @@ class Profile : Fragment() {
                             Toast.LENGTH_SHORT
                         ).show()
                     }
-            }else{
-                Toast.makeText(context, "Please fill in all fields", Toast.LENGTH_SHORT).show()
             }
         }
     }

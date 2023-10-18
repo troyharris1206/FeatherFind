@@ -50,9 +50,11 @@ class CreateAccount : AppCompatActivity() {
 
     }
 
+    //Used to add the user account details to Firebase
     private fun registerUser(email: String, password: String, firstName: String, surname: String) {
         val auth = FirebaseAuth.getInstance()
 
+        //Adds the user's email and password to Firebase Authentication
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
@@ -71,6 +73,7 @@ class CreateAccount : AppCompatActivity() {
                             }
                         }
 
+                    //Adds the user's email, first name, lastname and default settings to the Firebase db
                     user?.updateProfile(profileUpdates)?.addOnCompleteListener { task ->
                         if (task.isSuccessful) {
                             val db = FirebaseFirestore.getInstance()
@@ -79,6 +82,8 @@ class CreateAccount : AppCompatActivity() {
                                 "email" to email,
                                 "firstName" to firstName,
                                 "lastName" to surname,
+                                "measurementSystem" to "Metric",
+                                "maxDistance" to "15"
                             )
 
                             val userDocRef = db.collection("Users").document(user?.uid ?: "")
@@ -100,7 +105,7 @@ class CreateAccount : AppCompatActivity() {
                     val intent = Intent(this, Login::class.java)
                     startActivity(intent)
                 } else {
-                    // If sign up fails, display a message to the user.
+                    // If sign up fails
                     val errorMessage = task.exception?.message
                     Toast.makeText(this, "Registration failed: $errorMessage", Toast.LENGTH_SHORT).show()
                 }

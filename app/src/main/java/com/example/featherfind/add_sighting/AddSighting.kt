@@ -52,6 +52,7 @@ class AddSighting : Fragment() {
 
         val mainActivity = activity as? MainActivity
 
+        //Used to get the user to add a photo to the entry
         imagePickerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
                 val data: Intent? = result.data
@@ -181,9 +182,11 @@ class AddSighting : Fragment() {
             sightingTime.text = current.format(formatter).toString()
         }
 
+        //When the user clicks the add sighting button
         btnAddSighting.setOnClickListener() {
             val mainActivity = activity as? MainActivity
 
+            //Passes all the user input to the method that adds them to the db
             if (mainActivity != null) {
                 viewModel.addSightingInfo(
                     txtBirdName.text.toString(),
@@ -200,6 +203,7 @@ class AddSighting : Fragment() {
                     Toast.LENGTH_SHORT
                 ).show()
 
+                //Sets all the fields to default
                 txtBirdName.text = null
                 txtBirdSpecies.text = null
                 sightingDate.text = "Select Date"
