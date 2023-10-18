@@ -102,36 +102,53 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             filterHotspotsByDistance()
         }
 
+        // Request the user's current location
         requestUserLocation()
 
+// Initialize SeekBar object by finding its view by ID
         val distanceSeekBar: SeekBar = findViewById(R.id.distanceSeekBar)
 
+// Fetch the current authenticated user
         val currentUser = auth.currentUser
+
+// Check if the user is logged in
         if (currentUser != null) {
-            // Fetch maxDistance from Firestore
+            // Reference to the Firestore document for the current user
             val userDocument = db.collection("Users").document(currentUser.uid)
+
+            // Fetch the document data from Firestore
             userDocument.get()
                 .addOnSuccessListener { document ->
+                    // Check if the document exists and is not null
                     if (document != null && document.exists()) {
+                        // Fetch storedMaxDistance from Firestore and convert it to Float
                         val storedMaxDistance = document.getString("maxDistance")?.toFloatOrNull()
+
+                        // Check if storedMaxDistance is not null
                         if (storedMaxDistance != null) {
+                            // Update the maxDistance variable
                             maxDistance = storedMaxDistance
+                            // Log for debugging purposes
                             Log.d("Firestore", "Fetched maxDistance: $maxDistance")
 
-                            // Set SeekBar max and progress here
+                            // Set the maximum and progress values for the SeekBar
                             distanceSeekBar.max = maxDistance.toInt()
                             distanceSeekBar.progress = maxDistance.toInt()
                         } else {
+                            // Log a message if maxDistance is not available in the database
                             Log.d("Firestore", "maxDistance in DB is null")
                         }
                     } else {
+                        // Log a message if the document doesn't exist
                         Log.d("Firestore", "Document does not exist")
                     }
                 }
                 .addOnFailureListener { e ->
+                    // Log any errors that occur during the Firestore operation
                     Log.w("Firestore", "Error getting document", e)
                 }
         }
+
         distanceSeekBar.max = maxDistance.toInt()
 
         // Set SeekBar Listener
