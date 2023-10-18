@@ -13,9 +13,8 @@
 
     <fragment
         android:id="@+id/navigation_explore"
-        android:name="com.example.featherfind.explore.Explore"
-        android:label="@string/title_explore"
-        tools:layout="@layout/fragment_explore" />
+        android:name="com.example.featherfind.explore.ExploreFragment"
+        android:label="@string/title_explore" />
 
     <fragment
         android:id="@+id/navigation_add_sightings"
