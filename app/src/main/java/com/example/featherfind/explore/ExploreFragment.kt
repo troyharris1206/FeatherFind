@@ -21,6 +21,7 @@ import android.widget.ProgressBar
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import android.content.Intent
+import android.widget.Toast
 import com.example.featherfind.R
 
 /**
@@ -57,7 +58,7 @@ class ExploreFragment : Fragment() {
         val progressBar: ProgressBar = view.findViewById(R.id.progressBar)
         val btnHotspot: Button = view.findViewById(R.id.btnHotspots)
 
-        viewModel = ViewModelProvider(this).get(ExploreViewModel::class.java)
+        viewModel = ViewModelProvider(this)[ExploreViewModel::class.java]
 
         viewModel.isLoading.observe(viewLifecycleOwner, Observer { isLoading ->
             if (isLoading) {
@@ -75,21 +76,20 @@ class ExploreFragment : Fragment() {
         }
 
         viewModel.birdList.observe(viewLifecycleOwner, Observer { birds ->
-            if (birds != null && birds.isNotEmpty()) {
+            if (!birds.isNullOrEmpty()) {
                 adapter.updateData(birds)
-            } else {
             }
         })
         viewModel.filteredBirdList.observe(viewLifecycleOwner, Observer { birds ->
             if (!birds.isNullOrEmpty()) {
                 adapter.updateData(birds)
-            } else {
             }
         })
         searchEditText.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
                 viewModel.filterBirds(s.toString())
             }
+
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
@@ -97,8 +97,34 @@ class ExploreFragment : Fragment() {
             val intent = Intent(activity, MapsActivity::class.java)
             startActivity(intent)
         }
-
     }
+
+    /**
+     * Called when the fragment becomes visible to the user.
+     */
+    override fun onResume() {
+        // Call the superclass implementation.
+        super.onResume()
+
+        // Check if the app has location permissions.
+        if (hasLocationPermission()) {
+            // If location permissions are granted, initiate the asynchronous operation to fetch birds and their histograms.
+            lifecycleScope.launch {
+                // Asynchronously fetch bird and histogram data.
+                viewModel.initiateFetchBirdsAndHistograms()
+            }
+        } else {
+            // If location permissions are not granted, inform the user via a Toast message.
+            activity?.runOnUiThread {
+                Toast.makeText(
+                    context,
+                    "Please allow location request to load graphs",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+
     /**
      * Checks if the app has location permissions.
      *
@@ -139,14 +165,24 @@ class ExploreFragment : Fragment() {
      * @param grantResults The grant results for the corresponding permissions.
      */
     @Deprecated("Deprecated in Java")
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
         if (requestCode == PERMISSION_REQUEST_CODE) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 lifecycleScope.launch {
                     viewModel.initiateFetchBirdsAndHistograms()
                 }
             } else {
-
+                activity?.runOnUiThread {
+                    Toast.makeText(
+                        context,
+                        "Please allow location request to load graphs",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
         }
     }

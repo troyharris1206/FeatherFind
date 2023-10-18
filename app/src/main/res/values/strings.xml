@@ -18,4 +18,6 @@
     </string>
     <string name="title_activity_create_account">CreateAccount</string>
     <string name="map_key_nhotspot_marker_nyour_location">Map Key: \nHotspot Marker - ⚫\nYour Location - 🔵</string>
+    <string name="distance">Distance:</string>
+    <string name="time">Travel Time:</string>
 </resources>

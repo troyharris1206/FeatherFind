@@ -17,14 +17,15 @@ import java.util.Calendar
 import kotlin.math.min
 
 /**
- * Adapter class for managing bird data in a RecyclerView.
+ * The BirdAdapter class is responsible for binding the bird data to the RecyclerView.
  */
 class BirdAdapter : RecyclerView.Adapter<BirdAdapter.BirdViewHolder>() {
-    // List to hold the bird data
+
+    // Holds the list of birds to be displayed in the RecyclerView.
     private var birdList: List<Bird> = mutableListOf()
 
     /**
-     * ViewHolder class to hold the UI elements for each bird item.
+     * ViewHolder class to cache view references for each bird item in the RecyclerView.
      */
     class BirdViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val birdNameTextView: TextView = itemView.findViewById(R.id.birdNameTextView)
@@ -33,7 +34,7 @@ class BirdAdapter : RecyclerView.Adapter<BirdAdapter.BirdViewHolder>() {
     }
 
     /**
-     * Inflates a new view and returns a new ViewHolder to hold it.
+     * Called when RecyclerView needs a new ViewHolder of a given type to represent an item.
      */
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BirdViewHolder {
         val itemView = LayoutInflater.from(parent.context).inflate(R.layout.bird_item, parent, false)
@@ -41,34 +42,69 @@ class BirdAdapter : RecyclerView.Adapter<BirdAdapter.BirdViewHolder>() {
     }
 
     /**
-     * Populates the data for each bird item.
+     * Called by RecyclerView to display the data at a specified position.
      */
     override fun onBindViewHolder(holder: BirdViewHolder, position: Int) {
+        // Populate the view with bird data.
         val currentBird = birdList[position]
         holder.birdNameTextView.text = currentBird.comName
         holder.birdSciNameTextView.text = currentBird.sciName
 
-        val barChart = holder.barChartContainer
-        barChart.clear()  // Clear old data
-        barChart.description.isEnabled = false
-        val entries = mutableListOf<BarEntry>()
+        // Set up the bar chart.
+        setupBarChart(holder.barChartContainer, currentBird.histogramData?.map { it.toFloat() })
 
-        currentBird.histogramData?.let { data ->
+    }
+
+    /**
+     * Returns the number of items in the bird list.
+     */
+    override fun getItemCount(): Int {
+        return birdList.size
+    }
+
+    /**
+     * Updates the bird list with new data and sorts it based on the last word in the common name.
+     *
+     * @param newBirdList The updated list of birds.
+     */
+    fun updateData(newBirdList: List<Bird>) {
+        birdList = newBirdList.sortedBy { it.comName.split(" ").last() }
+        notifyDataSetChanged()
+    }
+
+    /**
+     * Helper function to set up the bar chart.
+     *
+     * @param barChart The BarChart object to be set up.
+     * @param histogramData The histogram data for the bird.
+     */
+    private fun setupBarChart(barChart: BarChart, histogramData: List<Float>?) {
+        // Clear old data.
+        barChart.clear()
+        barChart.description.isEnabled = false
+
+        // Prepare new data entries.
+        val entries = mutableListOf<BarEntry>()  // Declare entries here
+
+        // Prepare new data entries.
+        histogramData?.let { data ->
             for (i in 0 until 12) {
                 val startIndex = i * 4
                 val endIndex = min((i + 1) * 4, data.size)
                 if (startIndex < endIndex) {
-                    val monthlyAve = data.subList(startIndex, endIndex).average()
-                    entries.add(BarEntry(i.toFloat(), monthlyAve.toFloat()))
+                    val monthlyAve = data.subList(startIndex, endIndex).average().toFloat()
+                    entries.add(BarEntry(i.toFloat(), monthlyAve))
                 }
             }
         }
 
+        // Populate and style the bar chart if there are entries.
         if (entries.isNotEmpty()) {
-            holder.barChartContainer.visibility = View.VISIBLE  
+            barChart.visibility = View.VISIBLE
             val barDataSet = BarDataSet(entries, "Frequency of Species")
             barDataSet.color = Color.GRAY
             barDataSet.setDrawValues(false)
+
             val barData = BarData(barDataSet)
             barChart.data = barData
 
@@ -106,27 +142,7 @@ class BirdAdapter : RecyclerView.Adapter<BirdAdapter.BirdViewHolder>() {
 
             barChart.invalidate()
         } else {
-            holder.barChartContainer.visibility = View.GONE
+            barChart.visibility = View.GONE
         }
     }
-
-    /**
-     * Returns the number of items in the bird list.
-     */
-    override fun getItemCount(): Int {
-        return birdList.size
-    }
-
-    /**
-     * Updates the bird data and sorts it by the last word in the common name.
-     *
-     * @param newBirdList A new list of birds.
-     */
-    fun updateData(newBirdList: List<Bird>) {
-        birdList = newBirdList.sortedBy {
-            it.comName.split(" ").last()
-        }
-        notifyDataSetChanged()
-    }
-
 }

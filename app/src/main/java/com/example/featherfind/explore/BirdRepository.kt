@@ -99,11 +99,21 @@ object BirdRepository {
             null
         }
     }
-    suspend fun getGoogleDirections(context: Context, origin: LatLng, destination: LatLng): String? = suspendCancellableCoroutine { cont ->
-        val app = context.packageManager.getApplicationInfo(context.packageName, PackageManager.GET_META_DATA)
-        val bundle = app.metaData
-        val apiKey = bundle.getString("com.google.android.geo.API_KEY")
 
+    /**
+     * Fetch Google Directions between two points represented by LatLng objects.
+     *
+     * @param context Android context, required for obtaining API key from metadata.
+     * @param origin Starting point of the journey.
+     * @param destination Endpoint of the journey.
+     * @return Directions data in string format, or null if the API request fails.
+     */
+    suspend fun getGoogleDirections(context: Context, origin: LatLng, destination: LatLng): String? = suspendCancellableCoroutine { cont ->
+        // Retrieve API key from app metadata
+        val apiKey = context.packageManager.getApplicationInfo(context.packageName, PackageManager.GET_META_DATA)
+            .metaData.getString("com.google.android.geo.API_KEY")
+
+        // Build Google Directions API URL
         val url = HttpUrl.Builder()
             .scheme("https")
             .host("maps.googleapis.com")
@@ -114,12 +124,12 @@ object BirdRepository {
             .build()
         val request = Request.Builder().url(url).build()
 
+        // Asynchronous call to Google Directions API
         val call = okHttpClient.newCall(request)
         call.enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 cont.resumeWithException(e)
             }
-
             override fun onResponse(call: Call, response: okhttp3.Response) {
                 if (response.isSuccessful) {
                     cont.resume(response.body()?.string())
@@ -128,6 +138,7 @@ object BirdRepository {
                 }
             }
         })
+        // Cancel the API call if the coroutine is cancelled
         cont.invokeOnCancellation {
             call.cancel()
         }

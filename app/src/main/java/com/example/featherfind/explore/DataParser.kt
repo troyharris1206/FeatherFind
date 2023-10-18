@@ -58,19 +58,32 @@ object DataParser {
         }
         return histogramData
     }
+    /**
+     * Parses the raw API response to extract hotspot information and return a list of Hotspot objects.
+     * Assumes that the API response is a CSV-like formatted string.
+     *
+     * @param response Raw API response in String format.
+     * @return List of Hotspot objects parsed from the API response.
+     */
     fun parseApiResponse(response: String): List<Hotspot> {
+        // Split the API response by lines and iterate through each line
         return response.split("\n").mapNotNull { line ->
+            // Split each line by comma to extract individual data fields
             val parts = line.split(",")
+
+            // Ensure that each line has at least 8 fields (based on your specific API response structure)
             if (parts.size >= 8) {
+                // Extract relevant data fields
                 val id = parts[0]
                 val name = parts[6]
                 val latitude = parts[4].toDoubleOrNull()
                 val longitude = parts[5].toDoubleOrNull()
+
+                // Create a Hotspot object if both latitude and longitude can be converted to Double
                 if (latitude != null && longitude != null) {
                     Hotspot(latitude, longitude, name)
-                } else null
-            } else null
+                } else null // Skip if latitude or longitude can't be converted to Double
+            } else null // Skip if the line has fewer than 8 fields
         }
     }
-
 }

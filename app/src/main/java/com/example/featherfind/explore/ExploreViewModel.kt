@@ -139,7 +139,6 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         if (fetchBirdsJob?.isActive == true) {
             return  // exit if a similar job is already running
         }
-
         fetchBirdsJob = coroutineScope.launch {
             isLoading.postValue(true)
             val fetchedBirds = fetchBirds()

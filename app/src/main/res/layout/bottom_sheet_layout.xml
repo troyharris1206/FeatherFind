@@ -22,18 +22,18 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Distance: "
+            android:text="@string/distance"
             android:paddingEnd="8dp"
             android:paddingStart="8dp" />
 
         <TextView
             android:id="@+id/travel_time"
-            android:layout_width="0dp"
+            android:layout_width="66dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Time: "
+            android:paddingStart="8dp"
             android:paddingEnd="8dp"
-            android:paddingStart="8dp" />
+            android:text="@string/time" />
     </LinearLayout>
 
 </LinearLayout>

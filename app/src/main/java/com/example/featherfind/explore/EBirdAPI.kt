@@ -27,14 +27,21 @@ interface EBirdAPI {
         @Query("lng") lng: Double
     ): Response<List<Bird>>
 
+
     /**
-     * Fetches a list of hotspots for a given geographic location.
+     * Fetches a list of bird-watching hotspots by a given region code.
      *
-     * This API endpoint retrieves hotspot data based on latitude and longitude.
+     * This function is a coroutine and is designed to be called in a suspended context.
+     * It interacts with the "/ref/hotspot/{regionCode}" endpoint of the eBird API to fetch data.
      *
-     * @param lat The latitude coordinate of the location.
-     * @param lng The longitude coordinate of the location.
-     * @return A Response object containing a list of Hotspot objects or an error.
+     * @param regionCode The code representing a specific geographical region.
+     *                   This parameter will be included in the API's endpoint URL.
+     *
+     * @return A Response object containing either:
+     *          - A list of Hotspot objects encapsulated in a ResponseBody, or
+     *          - An error message in the ResponseBody.
+     *
+     * @throws IOException if there is a failure during the execution of the HTTP request.
      */
     @GET("ref/hotspot/{regionCode}")
     suspend fun getHotspotsByRegion(@Path("regionCode") regionCode: String): Response<ResponseBody>

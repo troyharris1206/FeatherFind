@@ -47,88 +47,135 @@ import com.google.maps.android.PolyUtil
 import org.json.JSONException
 import org.json.JSONObject
 
+/**
+ * MapsActivity: Activity to display Google Maps and hotspots.
+ * Implements OnMapReadyCallback to get notified when the map is ready.
+ */
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
-    private lateinit var mMap: GoogleMap
-    private lateinit var binding: ActivityMapsBinding
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private val LOCATION_PERMISSION_REQUEST_CODE = 1002
-    private lateinit var viewModel: HotspotViewModel
-    private var maxDistance: Float = 50000f  // 50km in meters
-    private var userLocation: LatLng = LatLng(0.0, 0.0)
-    private var allHotspots: List<Hotspot> = listOf()
-    private var travelDistance: String = ""
-    private var travelTime: String = ""
-    private var directionSteps: ArrayList<String> = ArrayList()  // To hold direction steps
-    private var currentPolyline: Polyline? = null
+    // Member Variables
+    private lateinit var mMap: GoogleMap  // Google Map object
+    private lateinit var binding: ActivityMapsBinding  // View binding object
+    private lateinit var fusedLocationClient: FusedLocationProviderClient  // Location client
+    private val LOCATION_PERMISSION_REQUEST_CODE = 1002  // Request code for location permissions
+    private lateinit var viewModel: HotspotViewModel  // ViewModel for hotspots
+    private var maxDistance: Float = 50000f  // Max distance to filter hotspots (in meters)
+    private var userLocation: LatLng = LatLng(0.0, 0.0)  // User's location
+    private var allHotspots: List<Hotspot> = listOf()  // List to store all hotspots
+    private var travelDistance: String = ""  // Travel distance
+    private var travelTime: String = ""  // Travel time
+    private var directionSteps: ArrayList<String> = ArrayList()  // List to hold direction steps
+    private var currentPolyline: Polyline? = null  // Polyline object to represent the route on the map
 
+    /**
+     * Called when the activity is created.
+     * Initializes the map, ViewModel, and other UI components.
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Initialize View Binding
         binding = ActivityMapsBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        val mapFragment = supportFragmentManager
-            .findFragmentById(R.id.map) as SupportMapFragment
+
+        // Initialize Map Fragment
+        val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
-        val distanceSeekBar: SeekBar = findViewById(R.id.distanceSeekBar)
+
+        // Initialize ViewModel and Fused Location Client
         viewModel = ViewModelProvider(this).get(HotspotViewModel::class.java)
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
+        // Observe changes in the hotspot list
         viewModel.hotspotList.observe(this) { hotspots ->
             allHotspots = hotspots ?: listOf()
             filterHotspotsByDistance()
-
         }
+
+        // Initialize distance filter SeekBar
+        val distanceSeekBar: SeekBar = findViewById(R.id.distanceSeekBar)
+        distanceSeekBar.max = maxDistance.toInt()
+        distanceSeekBar.progress = maxDistance.toInt()
+        // Listen to SeekBar changes
         distanceSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                maxDistance = progress.toFloat()
-                filterHotspotsByDistance()
-                distanceSeekBar.max = 50000
+                maxDistance =
+                    progress.toFloat()  // Update maxDistance based on the SeekBar's progress
+                filterHotspotsByDistance()  // Filter hotspots based on the updated maxDistance
             }
-
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                // Optional
+            }
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                // Optional
+            }
         })
-        // Request the user's location
+        // Request the user's current location
         requestUserLocation()
     }
 
+    /**
+     * Filters the list of hotspots based on their distance from the user's current location.
+     * Only hotspots within 'maxDistance' meters are included.
+     * After filtering, updates the map markers to reflect the filtered list.
+     */
     private fun filterHotspotsByDistance() {
+        // Filter all hotspots based on distance from the user's location
         val filteredHotspots = allHotspots.filter { hotspot ->
             val hotspotLocation = LatLng(hotspot.longitude, hotspot.latitude)
             val distance = distanceBetween(userLocation, hotspotLocation)
-            distance <= maxDistance
+            distance <= maxDistance  // Include the hotspot if it is within maxDistance
         }
+        // Update map markers based on filtered hotspots
         updateMapMarkers(filteredHotspots)
     }
 
+    /**
+     * Calculates the distance between two LatLng points using Android's Location API.
+     * @param point1 The first geographical point.
+     * @param point2 The second geographical point.
+     * @return The distance between point1 and point2 in meters.
+     */
     private fun distanceBetween(point1: LatLng, point2: LatLng): Float {
-        val results = FloatArray(1)
+        val results = FloatArray(1)  // Array to hold the distance result
+
+        // Calculate distance between two points
         Location.distanceBetween(
             point1.latitude, point1.longitude,
             point2.latitude, point2.longitude,
             results
         )
-        return results[0]
+        return results[0]  // Return the calculated distance
     }
 
+    /**
+     * Draws the driving route on the map and shows direction steps, distance, and time.
+     * The function parses a JSON response from a mapping service to retrieve route details.
+     * @param directions The JSON string containing route information.
+     */
     private fun drawRoute(directions: String) {
         try {
+            // Parse the JSON response
             val jsonResponse = JSONObject(directions)
             val routesArray = jsonResponse.getJSONArray("routes")
 
-            // Clear previous direction steps
+            // Clear previous direction steps to prepare for new directions
             directionSteps.clear()
 
+            // Check if there are available routes
             if (routesArray.length() > 0) {
                 val route = routesArray.getJSONObject(0)
                 val legs = route.getJSONArray("legs")
 
+                // Check if there are available legs
                 if (legs.length() > 0) {
                     val leg = legs.getJSONObject(0)
+
+                    // Extract travel distance and time
                     travelDistance = leg.getJSONObject("distance").getString("text")
                     travelTime = leg.getJSONObject("duration").getString("text")
 
+                    // Parse direction steps
                     val steps = leg.getJSONArray("steps")
                     for (i in 0 until steps.length()) {
                         val step = steps.getJSONObject(i)
@@ -136,29 +183,28 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                         instruction = Html.fromHtml(instruction).toString()
                         directionSteps.add(instruction)
                     }
-                    // Show direction steps to user
+
+                    // Display the direction steps in a bottom sheet
                     showDirectionSteps()
                 }
+
+                // Clear previous polyline if any
                 currentPolyline?.remove()
+
+                // Draw the new polyline on the map
                 val poly = route.getJSONObject("overview_polyline")
                 val polyline = poly.getString("points")
                 val decodedPath = PolyUtil.decode(polyline)
                 currentPolyline = mMap.addPolyline(PolylineOptions().addAll(decodedPath))
 
-
-                // Create LatLngBounds.Builder and include all route points
+                // Adjust the camera view to include all route points
                 val builder = LatLngBounds.Builder()
                 for (point in decodedPath) {
                     builder.include(point)
                 }
-                // Build the LatLngBounds
                 val bounds = builder.build()
-
-                // Create a CameraUpdate with padding
-                val padding = 50 // offset from edges of the map in pixels
+                val padding = 50  // offset from edges of the map in pixels
                 val cu = CameraUpdateFactory.newLatLngBounds(bounds, padding)
-
-                // Update the camera position
                 mMap.moveCamera(cu)
             } else {
                 Log.e("MapsActivity", "No routes available.")
@@ -168,21 +214,37 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
+    /**
+     * Displays a bottom sheet dialog containing the direction steps, total distance, and estimated travel time.
+     */
     private fun showDirectionSteps() {
+        // Initialize bottom sheet dialog and its view
         val bottomSheetDialog = BottomSheetDialog(this)
         val bottomSheetView = layoutInflater.inflate(R.layout.bottom_sheet_layout, null)
 
+        // Set up ListView adapter to show direction steps
         val arrayAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, directionSteps)
         bottomSheetView.findViewById<ListView>(R.id.listView).adapter = arrayAdapter
 
-        bottomSheetView.findViewById<TextView>(R.id.travel_distance).text = "Distance: $travelDistance"
-        bottomSheetView.findViewById<TextView>(R.id.travel_time).text = "Time: $travelTime"
+        // Display travel distance and time
+        bottomSheetView.findViewById<TextView>(R.id.travel_distance).text =
+            "Distance: $travelDistance"
+        bottomSheetView.findViewById<TextView>(R.id.travel_time).text =
+            "Travel Time: $travelTime"
 
+        // Show the bottom sheet dialog
         bottomSheetDialog.setContentView(bottomSheetView)
         bottomSheetDialog.show()
     }
 
-
+    /**
+     * Asynchronously fetches route directions from the Google Directions API.
+     * Calls [drawRoute] to display the route on the map.
+     *
+     * @param context The application context
+     * @param origin The starting point for the route
+     * @param destination The destination point for the route
+     */
     private suspend fun getDirections(context: Context, origin: LatLng, destination: LatLng) {
         val response = getGoogleDirections(context, origin, destination)
         if (response != null) {
@@ -192,11 +254,19 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
+    /**
+     * Called when the Google Map is ready to be used.
+     * Configures initial settings for the map and sets listeners.
+     */
     override fun onMapReady(googleMap: GoogleMap) {
         Log.d("MapsActivity", "onMapReady called.")
         mMap = googleMap
+
+        // Enable UI controls like zoom and current location button
         mMap.uiSettings.isZoomControlsEnabled = true
         mMap.uiSettings.isMyLocationButtonEnabled = true
+
+        // Check for location permission
         if (hasLocationPermission()) {
             if (ActivityCompat.checkSelfPermission(
                     this,
@@ -206,40 +276,58 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     Manifest.permission.ACCESS_COARSE_LOCATION
                 ) != PackageManager.PERMISSION_GRANTED
             ) {
-                // TODO: Consider calling ActivityCompat#requestPermissions here if needed
                 return
             }
             mMap.isMyLocationEnabled = true
         }
-        updateMapMarkers(allHotspots)  // Ensure markers are added as soon as map is ready
+
+        // Add markers to the map as soon as it's ready
+        updateMapMarkers(allHotspots)
+
+        // Set marker click listener
         mMap.setOnMarkerClickListener { marker -> onMarkerClick(marker) }
     }
 
+    /**
+     * Clears existing markers and adds new ones for each hotspot.
+     * Uses custom icons for the markers.
+     *
+     * @param hotspots List of hotspots to display on the map.
+     */
     private fun updateMapMarkers(hotspots: List<Hotspot>) {
+        // Clear existing markers
         mMap.clear()
+
+        // Loop through all hotspots to add them as markers
         for (hotspot in hotspots) {
             val hotspotLocation = LatLng(hotspot.longitude, hotspot.latitude)
 
-            // Get the drawable resource
+            // Fetch drawable resource for marker icon
             val drawable = ContextCompat.getDrawable(this, R.drawable.baseline_location_on_24)!!
 
-            // Convert the drawable to a bitmap
+            // Convert drawable to bitmap
             val bitmap = drawableToBitmap(drawable)
 
             // Create a BitmapDescriptor from the bitmap
             val markerIcon = BitmapDescriptorFactory.fromBitmap(bitmap)
 
-            // Add the marker to the map with the custom icon
+            // Add the marker with custom icon to the map
             mMap.addMarker(
                 MarkerOptions()
                     .position(hotspotLocation)
                     .title(hotspot.name)
                     .icon(markerIcon)
             )
+            // Move the camera to the user's location
             mMap.moveCamera(CameraUpdateFactory.newLatLng(userLocation))
         }
     }
 
+    /**
+     * Checks if the user has granted location permissions.
+     *
+     * @return True if either fine or coarse location permission is granted, otherwise false.
+     */
     private fun hasLocationPermission(): Boolean {
         return ActivityCompat.checkSelfPermission(
             this,
@@ -251,8 +339,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 ) == PackageManager.PERMISSION_GRANTED
     }
 
+    /**
+     * Requests the user's last known location and updates the map accordingly.
+     * Also sets the region code in the ViewModel based on the location.
+     */
     private fun requestUserLocation() {
         if (hasLocationPermission()) {
+            // Check for permissions again, although redundant (required by the Android framework)
             if (ActivityCompat.checkSelfPermission(
                     this,
                     Manifest.permission.ACCESS_FINE_LOCATION
@@ -264,54 +357,64 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 return
             }
 
-            // Launch a coroutine to handle location retrieval
+            // Use Kotlin Coroutines to fetch location asynchronously
             lifecycleScope.launch {
                 try {
+                    // Await the last known location
                     val location = fusedLocationClient.lastLocation.await()
+
                     if (location != null) {
-                        // Get the user's location
+                        // Update user's location and camera view
                         userLocation = LatLng(location.latitude, location.longitude)
                         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 10f))
 
-                        // Determine the region code based on the user's location
+                        // Determine the region code based on the location
                         val regionCode = determineRegionCode(this@MapsActivity, location)
 
-                        // Set the region code in the ViewModel
+                        // Update the ViewModel with the region code
                         viewModel.setRegionCode(regionCode)
 
-                        // Call fetchHotspots from within a coroutine
+                        // Fetch hotspots based on the updated region
                         viewModel.fetchHotspots()
-                    } else {
-                        // Handle the case where location is null
                     }
                 } catch (exception: Exception) {
                     Log.e("MapsActivity", "Failed to get user location: ${exception.message}")
                 }
             }
         } else {
+            // Request location permissions if not granted
             requestLocationPermissions()
         }
     }
 
+    /**
+     * Determines the region code of a given location using reverse geocoding.
+     *
+     * @param context The application context
+     * @param location The location object containing latitude and longitude
+     * @return The country code as the region code, or "unknown_region" if geocoding fails
+     */
     private fun determineRegionCode(context: Context, location: Location): String {
         val geocoder = Geocoder(context, Locale.getDefault())
         try {
+            // Attempt to reverse geocode the location
             val addresses: List<Address>? =
                 geocoder.getFromLocation(location.latitude, location.longitude, 1)
+
             if (!addresses.isNullOrEmpty()) {
-                // Get the first address, which is usually the most accurate one
+                // Use the first address, generally the most accurate
                 val address = addresses[0]
-                // Use the country code as the region code
+
+                // Return the country code as the region code
                 return address.countryCode ?: "unknown_country"
             }
         } catch (e: IOException) {
             e.printStackTrace()
         }
 
-        // Default to an unknown region code if reverse geocoding fails
+        // Default to "unknown_region" if geocoding fails
         return "unknown_region"
     }
-
 
     private fun requestLocationPermissions() {
         ActivityCompat.requestPermissions(
@@ -323,16 +426,27 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             LOCATION_PERMISSION_REQUEST_CODE
         )
     }
-    fun drawableToBitmap(drawable: Drawable): Bitmap {
+
+    /**
+     * Converts a Drawable to a Bitmap.
+     *
+     * @param drawable The Drawable object to be converted
+     * @return A Bitmap representation of the provided Drawable
+     */
+    private fun drawableToBitmap(drawable: Drawable): Bitmap {
+        // If the Drawable is a BitmapDrawable, simply return its Bitmap
         if (drawable is BitmapDrawable) {
             return drawable.bitmap
         }
 
+        // Create a Bitmap object with the dimensions of the Drawable
         val bitmap = Bitmap.createBitmap(
             drawable.intrinsicWidth,
             drawable.intrinsicHeight,
             Bitmap.Config.ARGB_8888
         )
+
+        // Prepare a Canvas to draw the Drawable on the Bitmap
         val canvas = Canvas(bitmap)
         drawable.setBounds(0, 0, canvas.width, canvas.height)
         drawable.draw(canvas)
@@ -340,12 +454,24 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         return bitmap
     }
 
+    /**
+     * Handles the event when a map marker is clicked.
+     *
+     * @param marker The clicked Marker object
+     * @return True to indicate that the click event has been consumed
+     */
     private fun onMarkerClick(marker: Marker): Boolean {
+        // Remove the existing polyline, if any
         currentPolyline?.remove()
+
+        // Get the destination LatLng from the marker
         val destination = marker.position
+
+        // Launch a coroutine to fetch directions to the clicked marker
         lifecycleScope.launch {
             getDirections(this@MapsActivity, userLocation, destination)
         }
-        return true
+
+        return true  // Consumed the click event
     }
 }
