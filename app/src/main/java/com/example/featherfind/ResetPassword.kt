@@ -20,22 +20,28 @@ class ResetPassword : AppCompatActivity() {
 
         //When the user clicks the reset password button
         btnResetPassword.setOnClickListener(){
-            val auth = FirebaseAuth.getInstance()
+            if (email.text.isNotEmpty()){
+                val auth = FirebaseAuth.getInstance()
 
-            //Sends an email to the registered email account with instructions to reset their password
-            //Only occurs if the email entered is registered and valid
-            auth.sendPasswordResetEmail(email.text.toString())
-                .addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        Toast.makeText(this, "Password reset email sent.", Toast.LENGTH_SHORT).show()
-                        val intent = Intent(this, Login::class.java)
-                        startActivity(intent)
-                    } else {
-                        val errorMessage = task.exception?.message
-                        Toast.makeText(this, "Error sending password reset email: $errorMessage", Toast.LENGTH_SHORT).show()
+                //Sends an email to the registered email account with instructions to reset their password
+                //Only occurs if the email entered is registered and valid
+                auth.sendPasswordResetEmail(email.text.toString())
+                    .addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            Toast.makeText(this, "Password reset email sent.", Toast.LENGTH_SHORT).show()
+                            val intent = Intent(this, Login::class.java)
+                            startActivity(intent)
+                        } else {
+                            val errorMessage = task.exception?.message
+                            Toast.makeText(this, "Error sending password reset email: $errorMessage", Toast.LENGTH_SHORT).show()
+                        }
                     }
-                }
+            }
+            else{
+                Toast.makeText(this, "Please enter a valid email.", Toast.LENGTH_SHORT).show()
+            }
         }
+
 
         txtLogin.setOnClickListener(){
             val intent = Intent(this, Login::class.java)
