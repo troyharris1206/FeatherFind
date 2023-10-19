@@ -83,13 +83,13 @@ class Settings : Fragment() {
                 //If the metric option is chosen
                 R.id.rbMetric -> {
                     txtTravelDistance.text = "Maximum Travel Distance (Kilometers)"
-                    txtMinAndMax.text = "Min value: 0.10\nMaxValue: 5000.00"
+                    txtMinAndMax.text = "Min Value: 0.10\nMax Value: 5000.00"
                     txtUserDistance.setText(convertToKilometers(txtUserDistance.text.toString()))
                 }
                 //If the imperial option is chosen
                 R.id.rbImperial -> {
                     txtTravelDistance.text = "Maximum Travel Distance (Miles)"
-                    txtMinAndMax.text = "Min value: 0.0062\nMaxValue: 3106.86"
+                    txtMinAndMax.text = "Min Value: 0.0062\nMax Value: 3106.86"
                     txtUserDistance.setText(convertToMiles(txtUserDistance.text.toString()))
                 }
             }
