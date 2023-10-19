@@ -184,31 +184,43 @@ class AddSighting : Fragment() {
 
         //When the user clicks the add sighting button
         btnAddSighting.setOnClickListener() {
-            val mainActivity = activity as? MainActivity
+            //If the user has entered a value for all of the fields
+            if (txtBirdName.text.isNotEmpty() && txtBirdSpecies.text.isNotEmpty() && sightingDate.text != "Select Date"
+                && sightingTime.text != "Select Time" && txtSightingDescription.text.isNotEmpty()){
+                val mainActivity = activity as? MainActivity
 
-            //Passes all the user input to the method that adds them to the db
-            if (mainActivity != null) {
-                viewModel.addSightingInfo(
-                    txtBirdName.text.toString(),
-                    txtBirdSpecies.text.toString(),
-                    sightingDate.text.toString(),
-                    sightingTime.text.toString(),
-                    txtSightingDescription.text.toString()
-                )
+                //Passes all the user input to the method that adds them to the db
+                if (mainActivity != null) {
+                    viewModel.addSightingInfo(
+                        txtBirdName.text.toString(),
+                        txtBirdSpecies.text.toString(),
+                        sightingDate.text.toString(),
+                        sightingTime.text.toString(),
+                        txtSightingDescription.text.toString()
+                    )
 
-                // Sighting Info added successfully
+                    // Sighting Info added successfully
+                    Toast.makeText(
+                        mainActivity,
+                        "Sighting info added successfully!",
+                        Toast.LENGTH_SHORT
+                    ).show()
+
+                    //Sets all the fields to default
+                    txtBirdName.text = null
+                    txtBirdSpecies.text = null
+                    sightingDate.text = "Select Date"
+                    sightingTime.text = "Select Time"
+                    txtSightingDescription.text = null
+                }
+            }
+            //User missed a field
+            else{
                 Toast.makeText(
                     mainActivity,
-                    "Sighting info added successfully!",
+                    "Please make sure that you've filled in all the fields.",
                     Toast.LENGTH_SHORT
                 ).show()
-
-                //Sets all the fields to default
-                txtBirdName.text = null
-                txtBirdSpecies.text = null
-                sightingDate.text = "Select Date"
-                sightingTime.text = "Select Time"
-                txtSightingDescription.text = null
             }
         }
 

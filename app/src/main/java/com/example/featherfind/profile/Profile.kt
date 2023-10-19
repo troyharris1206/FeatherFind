@@ -80,11 +80,14 @@ class Profile : Fragment() {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProvider(this).get(ProfileViewModel::class.java)
 
+
         val navController = findNavController()
         val btnSettings = requireView().findViewById<Button>(R.id.btnSettings)
         btnSettings.setOnClickListener {
             navController.navigate(R.id.navigation_settings)
         }
+
+
 
         val deleteButton = requireView().findViewById<Button>(R.id.btnDeleteAccount)
         deleteButton.setOnClickListener {

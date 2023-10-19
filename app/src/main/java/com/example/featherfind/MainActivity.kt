@@ -28,5 +28,37 @@ class MainActivity : AppCompatActivity() {
         val navController = findNavController(R.id.nav_host_fragment_activity_main)
 
         navView.setupWithNavController(navController)
+
+        navView.setOnNavigationItemSelectedListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.navigation_home -> {
+                    // If the Home button is pressed, navigate to the Home fragment
+                    navController.navigate(R.id.navigation_home)
+                    return@setOnNavigationItemSelectedListener true
+                }
+                R.id.navigation_explore -> {
+                    // If the Explore button is pressed, navigate to the Explore fragment
+                    navController.navigate(R.id.navigation_explore)
+                    return@setOnNavigationItemSelectedListener true
+                }
+                R.id.navigation_add_sightings -> {
+                    // If the Add Sightings button is pressed, navigate to the Add Sightings fragment
+                    navController.navigate(R.id.navigation_add_sightings)
+                    return@setOnNavigationItemSelectedListener true
+                }
+                R.id.navigation_sightings -> {
+                    // If the Sightings button is pressed, navigate to the Sightings fragment
+                    navController.navigate(R.id.navigation_sightings)
+                    return@setOnNavigationItemSelectedListener true
+                }
+                R.id.navigation_profile -> {
+                    // If the Profile button is pressed, navigate to the Profile fragment
+                    navController.navigate(R.id.navigation_profile)
+                    return@setOnNavigationItemSelectedListener true
+                }
+                else -> false
+            }
+        }
+
     }
 }
