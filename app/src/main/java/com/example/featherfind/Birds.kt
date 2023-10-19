@@ -3,6 +3,7 @@ package com.example.featherfind
 import com.google.type.DateTime
 import java.util.Date
 
+//Data class for birds
 data class Birds(
     val birdName: String = "",
     val birdSpecies: String = "",

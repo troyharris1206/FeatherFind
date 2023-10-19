@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 class BirdsAdapter(private val birds: List<Birds>):
     RecyclerView.Adapter<BirdsAdapter.ViewHolder>(){
 
+    //viewHolder Method Header
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val nameTextView: TextView = itemView.findViewById(R.id.txtBirdName)
         val specieTextView: TextView = itemView.findViewById(R.id.txtBirdSpecies)
@@ -17,12 +18,14 @@ class BirdsAdapter(private val birds: List<Birds>):
         val timeTextView: TextView = itemView.findViewById(R.id.txtBirdTime)
     }
 
+    //onCreateViewHolder Method Header
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
             val itemView = LayoutInflater.from(parent.context)
                 .inflate(R.layout.birds_recycler_layout, parent, false)
             return ViewHolder(itemView)
     }
 
+    //onBindViewHolder Method Header
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val bird = birds[position]
         holder.nameTextView.text = bird.birdName
@@ -32,6 +35,7 @@ class BirdsAdapter(private val birds: List<Birds>):
         holder.timeTextView.text = bird.timeOfSighting
     }
 
+    //getItemCount Method Header
     override fun getItemCount(): Int {
             return birds.size
     }

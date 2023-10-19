@@ -54,6 +54,7 @@ class Sightings : Fragment() {
     private lateinit var editSightings: Button
     private lateinit var viewStatistics: Button
 
+    //onCreateView method header
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -61,6 +62,7 @@ class Sightings : Fragment() {
         return inflater.inflate(R.layout.fragment_sightings, container, false)
     }
 
+    //onActivityCreated method header
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
@@ -78,14 +80,13 @@ class Sightings : Fragment() {
         editSightings = requireView().findViewById(R.id.btnEditSightings)
         viewStatistics = requireView().findViewById(R.id.btnViewStatistics)
 
+        //viewstatistics functionality
         viewStatistics.setOnClickListener {
             Toast.makeText(requireContext(), "Feature currently unavailable.", Toast.LENGTH_SHORT).show()
         }
 
-
-        // Add a click listener to your button
+        // FromDate datepicker functionality
         fromDate.setOnClickListener {
-            // Add the code for the date picker dialog here
             val c = Calendar.getInstance()
             val year = c.get(Calendar.YEAR)
             val month = c.get(Calendar.MONTH)
@@ -108,9 +109,8 @@ class Sightings : Fragment() {
             datePickerDialog.show()
         }
 
-        // Add a click listener to your button
+        // toDate datepicker functionality
         toDate.setOnClickListener {
-            // Add the code for the date picker dialog here
             val c = Calendar.getInstance()
             val year = c.get(Calendar.YEAR)
             val month = c.get(Calendar.MONTH)
@@ -133,12 +133,14 @@ class Sightings : Fragment() {
             datePickerDialog.show()
         }
 
+        //SearchBird button functionality checks for birds sighted in between the date range
         searchBird.setOnClickListener {
             val db = Firebase.firestore
             val birdsCollection = db.collection("Sightings")
 
             val userUID = FirebaseAuth.getInstance().currentUser?.uid
 
+            //If statement for date range validation
             if (fromCalendar != null && toCalendar != null && !toCalendar!!.before(fromCalendar)) {
                 val fromDateText = fromDate.text.toString()
                 val toDateText = toDate.text.toString()
@@ -157,6 +159,7 @@ class Sightings : Fragment() {
                             birds.add(bird)
                         }
 
+                        //sets findings to the recycler view
                         recyclerView = requireView().findViewById(R.id.birdRecyclerView)
                         recyclerView.layoutManager = LinearLayoutManager(context)
                         val adapter = BirdsAdapter(birds)
@@ -170,6 +173,7 @@ class Sightings : Fragment() {
             }
         }
 
+        //viewAllSightings button functionality, gets all birds sighting associated with userID
         viewAll.setOnClickListener {
             val db = Firebase.firestore
             val birdsCollection = db.collection("Sightings")
@@ -189,6 +193,7 @@ class Sightings : Fragment() {
                         birds.add(bird)
                     }
 
+                    //sets findings to the recycler view
                     recyclerView = requireView().findViewById(R.id.birdRecyclerView)
                     recyclerView.layoutManager = LinearLayoutManager(context)
                     val adapter = BirdsAdapter(birds)
@@ -200,11 +205,13 @@ class Sightings : Fragment() {
 
         }
 
+        //editSightings button functionality
         editSightings.setOnClickListener {
-            showPopupEdit(requireContext())
+            showPopupEdit(requireContext())//calls pop up
         }
     }
 
+    //Pop up for edit sightings
     @RequiresApi(Build.VERSION_CODES.O)
     fun showPopupEdit(context: Context) {
         val builder = AlertDialog.Builder(context)
@@ -261,7 +268,6 @@ class Sightings : Fragment() {
         val birdDate = view.findViewById<Button>(R.id.datePicker)
 
         //When the user clicks on the date option
-
         birdDate.setOnClickListener() {
             val mainActivity = activity as? MainActivity
 
@@ -297,7 +303,6 @@ class Sightings : Fragment() {
 
         val birdTime = view.findViewById<Button>(R.id.sightingTimePicker)
         val birdDescription= view.findViewById<EditText>(R.id.txtSightingDescription)
-        // Define birdDataList at a higher scope
         var birdDataList: List<Birds> = emptyList()
 
         //When the user clicks the current time button under the start time
@@ -325,7 +330,6 @@ class Sightings : Fragment() {
                 .get()
                 .addOnSuccessListener { documents ->
                     birdDataList = documents.documents.mapNotNull { document ->
-                        // Assuming you have a Bird data class with birdName and birdDescription
                         Birds(
                             document.getString("birdName").toString(),
                             document.getString("birdSpecies").toString(),
@@ -337,12 +341,12 @@ class Sightings : Fragment() {
                         )
                     }
 
-                    // Create an ArrayAdapter for the Spinner and set the data
+                    //Array adapter for the spinner component
                     val adapter = ArrayAdapter(context, android.R.layout.simple_spinner_item, birdDataList.map { it.birdName })
                     adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
                     birdSpinner.adapter = adapter
 
-                    // Set an OnItemSelectedListener to update the text fields
+                    //Gets all the variables for the selected bird
                     birdSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                         override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                             val selectedBird = birdDataList[position]
@@ -355,15 +359,13 @@ class Sightings : Fragment() {
 
                         override fun onNothingSelected(parent: AdapterView<*>?) {
                             // Handle when nothing is selected in the spinner
+                            // There are no options that are null
                         }
                     }
                 }
-                .addOnFailureListener { exception ->
-                    // Handle errors here
-                    // You should add error handling logic here, like displaying an error message.
-                }
         }
 
+        //ConfirmChanges button functionality, to update all the changes made to the sighting
         val confirmChanges = view.findViewById<Button>(R.id.btnUpdateSighting)
 
         confirmChanges.setOnClickListener {
@@ -383,7 +385,7 @@ class Sightings : Fragment() {
                 val db = FirebaseFirestore.getInstance()
                 val birdsCollection = db.collection("Sightings")
 
-                // Construct a query to find the document with the specific name and userUID
+                //query to find the document with the specific name and userUID
                 val query = birdsCollection
                     .whereEqualTo("birdName", selectedBird.birdName)
                     .whereEqualTo("userUID", FirebaseAuth.getInstance().currentUser?.uid)
@@ -394,7 +396,6 @@ class Sightings : Fragment() {
                             // Handle the case where no matching document is found
                             Toast.makeText(context, "Bird sighting not found for update.", Toast.LENGTH_SHORT).show()
                         } else {
-                            // There should be only one matching document, but loop through them
                             for (document in documents) {
                                 document.reference.update(
                                     "birdName", updatedName,
@@ -420,17 +421,15 @@ class Sightings : Fragment() {
             }else{
                 Toast.makeText(context, "Please fill in all fields", Toast.LENGTH_SHORT).show()
             }
-
-
         }
 
+        //Cancel button functionality, for if the user wishes to not edit the sighting
         val cancelButton = view.findViewById<Button>(R.id.btnCancelUpdateSighting)
 
         cancelButton.setOnClickListener {
 
             dialog.dismiss()
         }
-
         dialog.show()
     }
 }

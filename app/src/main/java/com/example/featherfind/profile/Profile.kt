@@ -29,17 +29,19 @@ class Profile : Fragment() {
         fun newInstance() = Profile()
     }
 
+    //Declaring variables of the various components
     private lateinit var viewModel: ProfileViewModel
     private lateinit var firstNameEditText: EditText
     private lateinit var surnameEditText: EditText
-    private lateinit var usernameEditText: EditText
 
+    //OnCreateView Method Header
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.fragment_profile, container, false)
 
+        //Setting my variable to each text inputs
         firstNameEditText = view.findViewById(R.id.etFirstname)
         surnameEditText = view.findViewById(R.id.etSurname)
 
@@ -72,33 +74,34 @@ class Profile : Fragment() {
 
         }
 
-
         return view
     }
 
+    //onActivityCreated Method Header
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProvider(this).get(ProfileViewModel::class.java)
 
-
+        //For Navigation to settings
         val navController = findNavController()
         val btnSettings = requireView().findViewById<Button>(R.id.btnSettings)
         btnSettings.setOnClickListener {
             navController.navigate(R.id.navigation_settings)
         }
 
-
-
+        //For Delete Button
         val deleteButton = requireView().findViewById<Button>(R.id.btnDeleteAccount)
         deleteButton.setOnClickListener {
-            showPopup(requireContext()) // 'this' is the context of your activity
+            showPopup(requireContext()) //calls popup
         }
 
+        //For Changepassword Button
         val changepasswordButton = requireView().findViewById<Button>(R.id.btnChangePassword)
         changepasswordButton.setOnClickListener {
-            showPopupPassword(requireContext())
+            showPopupPassword(requireContext())//calls pop up
         }
 
+        //For logout for functionality
         val logoutButton = requireView().findViewById<Button>(R.id.btnLogout)
         logoutButton.setOnClickListener {
             val auth = FirebaseAuth.getInstance()
@@ -106,22 +109,20 @@ class Profile : Fragment() {
             Toast.makeText(context, "Logged out Successfully.", Toast.LENGTH_SHORT).show()
             val intent = Intent(context, GetStarted::class.java)
             startActivity(intent)
-
         }
 
+        //Variables for applying the changes to the profile
         val applyChangesButton = requireView().findViewById<Button>(R.id.btnApplySettings)
         val etFirstName = requireView().findViewById<EditText>(R.id.etFirstname)
         val etSurname = requireView().findViewById<EditText>(R.id.etSurname)
 
-
+        //Apply changes button functionality
         applyChangesButton.setOnClickListener {
 
             val newFirstName = etFirstName.text.toString()
             val newSurname = etSurname.text.toString()
 
-
-
-
+            //checks if textboxes aren't empty
             if (newFirstName.isNotEmpty() && newSurname.isNotEmpty()) {
                 val user = FirebaseAuth.getInstance().currentUser
                 val userId = FirebaseAuth.getInstance().currentUser?.uid
@@ -151,6 +152,7 @@ class Profile : Fragment() {
         }
     }
 
+    //Pop up for deleting user
     fun showPopup(context: Context){
         val builder = AlertDialog.Builder(context)
         val inflater = LayoutInflater.from(context)
@@ -182,6 +184,7 @@ class Profile : Fragment() {
         dialog.show()
     }
 
+    //Popup for changing password
     fun showPopupPassword(context: Context){
         val builder = AlertDialog.Builder(context)
         val inflater = LayoutInflater.from(context)
@@ -238,6 +241,7 @@ class Profile : Fragment() {
         dialog.show()
     }
 
+    //Method to delete user and authentication
     fun deleteUser(){
 
         val user = FirebaseAuth.getInstance().currentUser
