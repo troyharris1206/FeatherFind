@@ -57,12 +57,12 @@ class Settings : Fragment() {
                         Log.d("SettingsFragment", "UserData: $userData")
 
                         //If the user setting for measurementType is set to metric
-                        if (userData?.measurementSystem == "Metric"){
+                        if (userData?.measurementSystem == "Metric") {
                             rbMetric.isChecked = true
                             txtUserDistance.setText(userData?.maxDistance)
                         }
                         //If the user setting for measurementType is set to imperial
-                        else{
+                        else {
                             rbImperial.isChecked = true
                             txtUserDistance.setText(userData?.maxDistance)
                         }
@@ -90,58 +90,44 @@ class Settings : Fragment() {
                 R.id.rbImperial -> {
                     txtTravelDistance.text = "Maximum Travel Distance (Miles)"
                     txtMinAndMax.text = "Min value: 0.0062\nMaxValue: 3106.86"
-                    txtUserDistance.setText (convertToMiles(txtUserDistance.text.toString()))
+                    txtUserDistance.setText(convertToMiles(txtUserDistance.text.toString()))
                 }
             }
         }
 
-        //When the user applies the setting changes
-        btnApplySettings.setOnClickListener(){
+        btnApplySettings.setOnClickListener() {
             val navController = findNavController()
             val userId = FirebaseAuth.getInstance().currentUser?.uid
             val firestore = FirebaseFirestore.getInstance()
             val userDocument = firestore.collection("Users").document(userId.toString())
 
-            //If there is a value entered by the user
-            if (txtUserDistance.text.isNotEmpty()){
-                //If metric is selected and the value is less than or equal to 5000
-                if (rbMetric.isChecked && txtUserDistance.text.toString().toDouble() <= 5000){
-                    //Updates for the db
-                    val updates = HashMap<String, Any>()
-                    updates["measurementSystem"] = "Metric"
-                    updates["maxDistance"] = txtUserDistance.text.toString()
+            if (txtUserDistance.text.isNotEmpty()) {
+                try {
+                    val distance = txtUserDistance.text.toString().replace(',', '.').toDouble()
 
-                    //Updates the user's document with the new settings
-                    userDocument.update(updates)
-                        .addOnSuccessListener {
-                            Toast.makeText(
-                                context,
-                                "Successfully updated user settings",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            navController.navigate(R.id.navigation_profile)
-                        }
-                        .addOnFailureListener { e ->
-                            Toast.makeText(
-                                context,
-                                "Unable to update settings: ${e.message}",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                }
-                //If metric is selected and the value is more than 5000
-                else if (rbMetric.isChecked && txtUserDistance.text.toString().toDouble() > 5000){
-                    Toast.makeText(
-                        context,
-                        "Please make sure the max distance entered is within the range specified.",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-                //If metric is selected and the value is less than or equal to 3106.86
-                else if (rbImperial.isChecked && txtUserDistance.text.toString().toDouble() <= 3106.86){
                     val updates = HashMap<String, Any>()
-                    updates["measurementSystem"] = "Imperial"
-                    updates["maxDistance"] = txtUserDistance.text.toString()
+
+                    if (rbMetric.isChecked && distance <= 5000) {
+                        updates["measurementSystem"] = "Metric"
+                        updates["maxDistance"] = distance.toString()
+                    } else if (rbMetric.isChecked && distance > 5000) {
+                        Toast.makeText(
+                            context,
+                            "Please make sure the max distance entered is within the range specified.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        return@setOnClickListener
+                    } else if (rbImperial.isChecked && distance <= 3106.86) {
+                        updates["measurementSystem"] = "Imperial"
+                        updates["maxDistance"] = distance.toString()
+                    } else if (rbImperial.isChecked && distance > 3106.86) {
+                        Toast.makeText(
+                            context,
+                            "Please make sure the max distance entered is within the range specified.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        return@setOnClickListener
+                    }
 
                     userDocument.update(updates)
                         .addOnSuccessListener {
@@ -159,17 +145,14 @@ class Settings : Fragment() {
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
-                }
-                //If imperial is selected and the value is more than 3106.86
-                else if (rbImperial.isChecked && txtUserDistance.text.toString().toDouble() > 3106.86){
+                } catch (e: NumberFormatException) {
                     Toast.makeText(
                         context,
-                        "Please make sure the max distance entered is within the range specified.",
+                        "Please enter a valid number for max distance",
                         Toast.LENGTH_SHORT
                     ).show()
                 }
-            }
-            else{
+            } else {
                 Toast.makeText(
                     context,
                     "Please enter a max distance value.",
@@ -177,23 +160,30 @@ class Settings : Fragment() {
                 ).show()
             }
         }
-
         return binding.root
     }
 
-    //Converts miles into kilometers
-    private fun convertToKilometers(miles: String): String {
-        // Convert miles to kilometers
-        val milesValue = miles.toDouble()
-        val kilometersValue = milesValue * 1.60934 // 1 mile = 1.60934 kilometers
-        return String.format("%.2f", kilometersValue)
-    }
+        //Converts miles into kilometers
+        private fun convertToKilometers(miles: String): String {
+            return try {
+                val milesValue = miles.replace(',', '.').toDouble()
+                val kilometersValue = milesValue * 1.60934 // 1 mile = 1.60934 kilometers
+                String.format("%.2f", kilometersValue)
+            } catch (e: NumberFormatException) {
+                // Handle the exception, maybe return a default value or alert the user
+                "Invalid number"
+            }
+        }
 
     //Converts kilometers into miles
     private fun convertToMiles(kilometers: String): String {
-        // Convert kilometers to miles
-        val kilometersValue = kilometers.toDouble()
-        val milesValue = kilometersValue / 1.60934
-        return String.format("%.2f", milesValue)
+        return try {
+            val kilometersValue = kilometers.replace(',', '.').toDouble()
+            val milesValue = kilometersValue / 1.60934 // 1 kilometer = 1/1.60934 miles
+            String.format("%.2f", milesValue)
+        } catch (e: NumberFormatException) {
+            // Handle the exception, maybe return a default value or alert the user
+            "Invalid number"
+        }
     }
 }

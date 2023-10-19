@@ -11,6 +11,8 @@ import android.location.Address
 import android.location.Geocoder
 import android.location.Location
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.Html
 import android.util.Log
 import android.view.View
@@ -73,6 +75,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private var selectedHotspotName: String? = null
     private var behavior: BottomSheetBehavior<View>? = null
     private var originalPeekHeight: Int = 0
+    private val seekBarHandler = Handler(Looper.getMainLooper())
 
     /**
      * Called when the activity is created.
@@ -105,59 +108,65 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         // Request the user's current location
         requestUserLocation()
 
-// Initialize SeekBar object by finding its view by ID
+        // Initialize SeekBar and TextView for maximum value
         val distanceSeekBar: SeekBar = findViewById(R.id.distanceSeekBar)
+        val maxValueTextView: TextView = findViewById(R.id.maxValue)
 
-// Fetch the current authenticated user
+        // Fetch the current authenticated user
         val currentUser = auth.currentUser
 
-// Check if the user is logged in
+        // Check if the user is logged in
         if (currentUser != null) {
-            // Reference to the Firestore document for the current user
             val userDocument = db.collection("Users").document(currentUser.uid)
 
-            // Fetch the document data from Firestore
             userDocument.get()
                 .addOnSuccessListener { document ->
-                    // Check if the document exists and is not null
                     if (document != null && document.exists()) {
-                        // Fetch storedMaxDistance from Firestore and convert it to Float
                         val storedMaxDistance = document.getString("maxDistance")?.toFloatOrNull()
-
-                        // Check if storedMaxDistance is not null
                         if (storedMaxDistance != null) {
-                            // Update the maxDistance variable
                             maxDistance = storedMaxDistance
-                            // Log for debugging purposes
-                            Log.d("Firestore", "Fetched maxDistance: $maxDistance")
+                            Log.d("Firestore", "$savedInstanceState")
+                            distanceSeekBar.max = (storedMaxDistance).toInt() // Max distance in meters
+                            distanceSeekBar.progress = (storedMaxDistance).toInt() // Initially set to max
 
-                            // Set the maximum and progress values for the SeekBar
-                            distanceSeekBar.max = maxDistance.toInt()
-                            distanceSeekBar.progress = maxDistance.toInt()
+                            // Set TextView to show max value
+                            maxValueTextView.text = "Max: ${maxDistance.toInt()}"
+
+                            // Call the filter function initially
+                            filterHotspotsByDistance()
+                            Log.d("Debug", "Max Distance: $maxDistance")
+                            Log.d("Debug", "User Location: $userLocation")
+                            Log.d("Debug", "All Hotspots: $allHotspots")
+
                         } else {
-                            // Log a message if maxDistance is not available in the database
                             Log.d("Firestore", "maxDistance in DB is null")
                         }
                     } else {
-                        // Log a message if the document doesn't exist
                         Log.d("Firestore", "Document does not exist")
                     }
                 }
                 .addOnFailureListener { e ->
-                    // Log any errors that occur during the Firestore operation
                     Log.w("Firestore", "Error getting document", e)
                 }
         }
 
-        distanceSeekBar.max = maxDistance.toInt()
-
-        // Set SeekBar Listener
         distanceSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                maxDistance = progress.toFloat()
-                filterHotspotsByDistance()
-            }
+                // Cancel the last runnable if it exists
+                seekBarHandler.removeCallbacksAndMessages(null)
 
+                // Create a new runnable
+                val newRunnable = Runnable {
+                    maxDistance = (progress.toFloat()) // You might need to adjust this based on your use-case
+                    filterHotspotsByDistance()
+
+                    // Update TextView to show the newly set max value
+                    maxValueTextView.text = "Max: $progress"
+                }
+
+                // Execute the runnable after 300ms
+                seekBarHandler.postDelayed(newRunnable, 300)
+            }
             override fun onStartTrackingTouch(seekBar: SeekBar?) {
                 // Optional
             }
@@ -167,23 +176,22 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             }
         })
     }
-
     /**
      * Filters the list of hotspots based on their distance from the user's current location.
      * Only hotspots within 'maxDistance' meters are included.
      * After filtering, updates the map markers to reflect the filtered list.
      */
     private fun filterHotspotsByDistance() {
-        // Filter all hotspots based on distance from the user's location
+        val maxDistanceInMeters = maxDistance * 1000
+        Log.d("Firestore", "$maxDistanceInMeters")
         val filteredHotspots = allHotspots.filter { hotspot ->
             val hotspotLocation = LatLng(hotspot.longitude, hotspot.latitude)
             val distance = distanceBetween(userLocation, hotspotLocation)
-            distance <= maxDistance  // Include the hotspot if it is within maxDistance
+            distance <= maxDistanceInMeters
         }
-        // Update map markers based on filtered hotspots
         updateMapMarkers(filteredHotspots)
+        Log.d("Debug", "Filtered Hotspots: $filteredHotspots")
     }
-
     /**
      * Calculates the distance between two LatLng points using Android's Location API.
      * @param point1 The first geographical point.
