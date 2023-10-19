@@ -14,6 +14,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
@@ -102,6 +103,7 @@ class AddSighting : Fragment() {
         val txtSightingDescription = binding.txtSightingDescription
         val btnAddPhoto = binding.btnAddPhoto
         val btnAddSighting = binding.btnAddSighting
+        val mainScrollView = binding.mainScrollView
 
         //Gets the time options for the user to pick from in the dropdown
         val timeOptions = Array(48) { "" }

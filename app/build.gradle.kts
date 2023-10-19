@@ -5,12 +5,8 @@ import org.gradle.api.JavaVersion
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-
     id("com.google.gms.google-services")
-
     id ("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
-
-
 }
 val apikeyPropertiesFile = rootProject.file("apikey.properties")
 val apikeyProperties = Properties()
