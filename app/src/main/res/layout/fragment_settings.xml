@@ -73,14 +73,15 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Metric (Kilometers)"
-                    android:checked="true"/>
+                    android:checked="true"
+                    android:buttonTint="@color/featherFind"/>
 
                 <RadioButton
                     android:id="@+id/rbImperial"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Imperial (Miles)"
-                    android:textColor="@color/black" />
+                    android:buttonTint="@color/featherFind"/>
             </RadioGroup>
 
 

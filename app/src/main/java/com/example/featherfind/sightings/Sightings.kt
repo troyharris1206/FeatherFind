@@ -82,7 +82,7 @@ class Sightings : Fragment() {
 
         //viewstatistics functionality
         viewStatistics.setOnClickListener {
-            Toast.makeText(requireContext(), "Feature currently unavailable.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "Feature coming in Final POE.", Toast.LENGTH_SHORT).show()
         }
 
         // FromDate datepicker functionality

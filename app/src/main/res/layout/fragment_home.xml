@@ -125,7 +125,7 @@
                 android:layout_gravity="center"
                 android:layout_marginTop="105dp"
                 android:background="@drawable/rounded_button"
-                android:text="View Your Observations"
+                android:text="View Your Sightings"
                 android:textAlignment="center"
                 android:textColor="@color/white"
                 android:textSize="10sp"

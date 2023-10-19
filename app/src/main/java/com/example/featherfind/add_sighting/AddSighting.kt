@@ -15,6 +15,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import android.widget.EditText
 import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
@@ -228,45 +229,50 @@ class AddSighting : Fragment() {
 
         //When the user clicks the add photo button
         btnAddPhoto.setOnClickListener {
-            val popupMenu = PopupMenu(requireContext(), btnAddPhoto)
-            popupMenu.menuInflater.inflate(R.menu.menu_photo_options, popupMenu.menu)
-            popupMenu.setOnMenuItemClickListener { item ->
-                when (item.itemId) {
-                    R.id.menu_select_photo -> {
-                        IMAGE_PICKER_REQUEST = true
-                        // Launch the image picker
-                        val intent = Intent(Intent.ACTION_GET_CONTENT)
-                        intent.type = "image/*"
-                        imagePickerLauncher.launch(intent)
-                        true
-                    }
-                    R.id.menu_take_photo -> {
-                        // Check if the camera permission is granted
-                        val hasCameraPermission = ActivityCompat.checkSelfPermission(
-                            requireContext(),
-                            Manifest.permission.CAMERA
-                        ) == PackageManager.PERMISSION_GRANTED
-
-                        // Request the camera permission if not granted
-                        if (!hasCameraPermission) {
-                            ActivityCompat.requestPermissions(
-                                requireActivity(),
-                                arrayOf(Manifest.permission.CAMERA),
-                                CAMERA_PERMISSION_REQUEST
-                            )
-                            return@setOnMenuItemClickListener true // Return true to indicate the action was handled
-                        }
-
-                        // Launch the camera activity if permission is granted
-                        CAMERA_REQUEST = true
-                        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-                        imagePickerLauncher.launch(intent)
-                        true
-                    }
-                    else -> false
-                }
-            }
-            popupMenu.show()
+            Toast.makeText(
+                mainActivity,
+                "Feature coming in Final POE.",
+                Toast.LENGTH_SHORT
+            ).show()
+//            val popupMenu = PopupMenu(requireContext(), btnAddPhoto)
+//            popupMenu.menuInflater.inflate(R.menu.menu_photo_options, popupMenu.menu)
+//            popupMenu.setOnMenuItemClickListener { item ->
+//                when (item.itemId) {
+//                    R.id.menu_select_photo -> {
+//                        IMAGE_PICKER_REQUEST = true
+//                        // Launch the image picker
+//                        val intent = Intent(Intent.ACTION_GET_CONTENT)
+//                        intent.type = "image/*"
+//                        imagePickerLauncher.launch(intent)
+//                        true
+//                    }
+//                    R.id.menu_take_photo -> {
+//                        // Check if the camera permission is granted
+//                        val hasCameraPermission = ActivityCompat.checkSelfPermission(
+//                            requireContext(),
+//                            Manifest.permission.CAMERA
+//                        ) == PackageManager.PERMISSION_GRANTED
+//
+//                        // Request the camera permission if not granted
+//                        if (!hasCameraPermission) {
+//                            ActivityCompat.requestPermissions(
+//                                requireActivity(),
+//                                arrayOf(Manifest.permission.CAMERA),
+//                                CAMERA_PERMISSION_REQUEST
+//                            )
+//                            return@setOnMenuItemClickListener true // Return true to indicate the action was handled
+//                        }
+//
+//                        // Launch the camera activity if permission is granted
+//                        CAMERA_REQUEST = true
+//                        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+//                        imagePickerLauncher.launch(intent)
+//                        true
+//                    }
+//                    else -> false
+//                }
+//            }
+//            popupMenu.show()
         }
 
 
