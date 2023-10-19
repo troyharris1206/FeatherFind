@@ -9,9 +9,9 @@
 
         <TextView
             android:id="@+id/headerText"
-            android:layout_width="410dp"
-            android:layout_height="86dp"
-            android:background="#FF5722"
+            android:layout_width="415dp"
+            android:layout_height="140dp"
+            android:background="#F98E55"
             android:gravity="center"
             android:text="Explore"
             android:textColor="#FFFFFF"

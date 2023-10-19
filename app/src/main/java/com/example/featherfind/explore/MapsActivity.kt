@@ -17,6 +17,7 @@ import android.text.Html
 import android.util.Log
 import android.view.View
 import android.widget.ArrayAdapter
+import android.widget.Button
 import android.widget.ListView
 import android.widget.SeekBar
 import android.widget.TextView
@@ -25,6 +26,8 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.Navigation.findNavController
+import androidx.navigation.findNavController
 import com.example.featherfind.R
 import com.example.featherfind.databinding.ActivityMapsBinding
 import com.example.featherfind.explore.BirdRepository.getGoogleDirections
@@ -90,7 +93,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
         val db = FirebaseFirestore.getInstance()
         val auth = FirebaseAuth.getInstance()
+        val backButton: Button = findViewById(R.id.backButton)
 
+        backButton.setOnClickListener {
+            finish()
+        }
         // Initialize Map Fragment
         val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
@@ -134,9 +141,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
                             // Call the filter function initially
                             filterHotspotsByDistance()
-                            Log.d("Debug", "Max Distance: $maxDistance")
-                            Log.d("Debug", "User Location: $userLocation")
-                            Log.d("Debug", "All Hotspots: $allHotspots")
 
                         } else {
                             Log.d("Firestore", "maxDistance in DB is null")
