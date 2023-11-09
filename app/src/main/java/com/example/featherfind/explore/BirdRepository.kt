@@ -108,20 +108,27 @@ object BirdRepository {
      * @param destination Endpoint of the journey.
      * @return Directions data in string format, or null if the API request fails.
      */
-    suspend fun getGoogleDirections(context: Context, origin: LatLng, destination: LatLng): String? = suspendCancellableCoroutine { cont ->
+    suspend fun getGoogleDirections(
+        context: Context,
+        origin: LatLng,
+        destination: LatLng,
+        requestAlternatives: Boolean = true // Add this parameter with a default value
+    ): String? = suspendCancellableCoroutine { cont ->
         // Retrieve API key from app metadata
         val apiKey = context.packageManager.getApplicationInfo(context.packageName, PackageManager.GET_META_DATA)
             .metaData.getString("com.google.android.geo.API_KEY")
 
-        // Build Google Directions API URL
+        // Build Google Directions API URL with the alternatives parameter
         val url = HttpUrl.Builder()
             .scheme("https")
             .host("maps.googleapis.com")
             .addPathSegments("maps/api/directions/json")
             .addQueryParameter("origin", "${origin.latitude},${origin.longitude}")
             .addQueryParameter("destination", "${destination.latitude},${destination.longitude}")
+            .addQueryParameter("alternatives", requestAlternatives.toString())
             .addQueryParameter("key", apiKey)
             .build()
+        Log.d("GoogleDirectionsApi", "URL: $url")
         val request = Request.Builder().url(url).build()
 
         // Asynchronous call to Google Directions API
@@ -138,9 +145,11 @@ object BirdRepository {
                 }
             }
         })
+
         // Cancel the API call if the coroutine is cancelled
         cont.invokeOnCancellation {
             call.cancel()
         }
     }
+
 }

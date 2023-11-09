@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.location.Address
@@ -214,77 +215,134 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         return results[0]  // Return the calculated distance
     }
 
-
     /**
      * Draws the driving route on the map and shows direction steps, distance, and time.
      * The function parses a JSON response from a mapping service to retrieve route details.
      * @param directions The JSON string containing route information.
      */
+    // Class-level variables
+    private val routePolylines = mutableListOf<Polyline>()
+    private var selectedRouteIndex = 0  // Default to the first route
+
+    // This will hold the original JSON response so we can redraw routes when a new one is selected.
+    private var lastDirectionsJson: String? = null
+
     private fun drawRoute(directions: String) {
+        lastDirectionsJson = directions // Store the JSON response for later use.
         try {
             // Parse the JSON response
             val jsonResponse = JSONObject(directions)
             val routesArray = jsonResponse.getJSONArray("routes")
 
-            // Clear previous direction steps to prepare for new directions
+            // Clear previous direction steps and polylines to prepare for new directions
             directionSteps.clear()
+            routePolylines.forEach { it.remove() } // Remove all polylines from the map
+            routePolylines.clear() // Clear the list of polyline references
 
-            // Check if there are available routes
-            if (routesArray.length() > 0) {
-                val route = routesArray.getJSONObject(0)
+            // Iterate over all routes
+            for (r in 0 until routesArray.length()) {
+                val route = routesArray.getJSONObject(r)
                 val legs = route.getJSONArray("legs")
 
-                // Check if there are available legs
                 if (legs.length() > 0) {
                     val leg = legs.getJSONObject(0)
 
-                    // Extract travel distance and time
-                    travelDistance = leg.getJSONObject("distance").getString("text")
-                    travelTime = leg.getJSONObject("duration").getString("text")
+                    // Draw the polyline for each route
+                    val poly = route.getJSONObject("overview_polyline")
+                    val polyline = poly.getString("points")
+                    val decodedPath = PolyUtil.decode(polyline)
+                    val polylineOptions = PolylineOptions()
+                        .addAll(decodedPath)
+                        .color(if (r == selectedRouteIndex) Color.rgb(249, 142, 85) else Color.GRAY)
+                        .clickable(true)
+                        .zIndex(if (r == selectedRouteIndex) 1f else 0f) // Set zIndex based on selection
+                    val polylineObject = mMap.addPolyline(polylineOptions)
+                    polylineObject.tag = r
+                    routePolylines.add(polylineObject)
 
-                    // Parse direction steps
-                    val steps = leg.getJSONArray("steps")
-                    for (i in 0 until steps.length()) {
-                        val step = steps.getJSONObject(i)
-                        var instruction = step.getString("html_instructions")
-                        instruction = Html.fromHtml(instruction).toString()
-                        directionSteps.add(instruction)
-                    }
-
-                    // Display the direction steps in a bottom sheet
-                    if (selectedHotspotName != null) {
-                        showDirectionSteps(selectedHotspotName!!)
-                    } else {
-                        // Handle case where selectedHotspotName is null
-                        Log.e("MapsActivity", "No hotspot name available.")
+                    if (r == selectedRouteIndex) {
+                        displaySelectedRouteDirections(r)
+                        selectedHotspotName?.let { showDirectionSteps(it) } // This will update the UI with the steps
                     }
                 }
-
-                // Clear previous polyline if any
-                currentPolyline?.remove()
-
-                // Draw the new polyline on the map
-                val poly = route.getJSONObject("overview_polyline")
-                val polyline = poly.getString("points")
-                val decodedPath = PolyUtil.decode(polyline)
-                currentPolyline = mMap.addPolyline(PolylineOptions().addAll(decodedPath))
-
-                // Adjust the camera view to include all route points
-                val builder = LatLngBounds.Builder()
-                for (point in decodedPath) {
-                    builder.include(point)
-                }
-                val bounds = builder.build()
-                val padding = 200  // offset from edges of the map in pixels
-                val cu = CameraUpdateFactory.newLatLngBounds(bounds, padding)
-                mMap.moveCamera(cu)
-            } else {
-                Log.e("MapsActivity", "No routes available.")
             }
+
+            // Adjust the camera view to include all route points from the selected route
+            adjustCameraToRoute(routesArray.getJSONObject(selectedRouteIndex))
+
+            // Set click listener for polylines outside the loop
+            mMap.setOnPolylineClickListener { polyline ->
+                val index = polyline.tag as? Int ?: return@setOnPolylineClickListener
+                onRouteSelected(index)
+            }
+
         } catch (e: JSONException) {
             Log.e("MapsActivity", "JSON parsing error: ${e.message}")
         }
     }
+
+    // Call this method when an alternative route is selected
+    private fun onRouteSelected(routeIndex: Int) {
+        selectedRouteIndex = routeIndex
+        // Parse the JSON response stored in lastDirectionsJson
+        val jsonResponse = JSONObject(lastDirectionsJson)
+        val routesArray = jsonResponse.getJSONArray("routes")
+
+        // Update the zIndex for all polylines
+        routePolylines.forEachIndexed { index, polyline ->
+            polyline.zIndex = if (index == selectedRouteIndex) 1f else 0f
+            polyline.color = if (index == selectedRouteIndex) Color.rgb(249, 142, 85) else Color.GRAY
+        }
+
+        // Redraw the directions and adjust the map
+        displaySelectedRouteDirections(routeIndex)
+        adjustCameraToRoute(routesArray.getJSONObject(routeIndex))
+
+        // Ensure that the selected hotspot name is set and call showDirectionSteps
+        if (selectedHotspotName != null) {
+            showDirectionSteps(selectedHotspotName!!)
+        }
+    }
+    // This function adjusts the camera to the selected route
+    private fun adjustCameraToRoute(selectedRoute: JSONObject) {
+        val poly = selectedRoute.getJSONObject("overview_polyline")
+        val polyline = poly.getString("points")
+        val decodedPath = PolyUtil.decode(polyline)
+        val boundsBuilder = LatLngBounds.Builder()
+        for (point in decodedPath) {
+            boundsBuilder.include(point)
+        }
+        val bounds = boundsBuilder.build()
+        val padding = 250
+        val cu = CameraUpdateFactory.newLatLngBounds(bounds, padding)
+        mMap.animateCamera(cu)
+    }
+
+    // This function displays the direction steps for the selected route
+    private fun displaySelectedRouteDirections(routeIndex: Int) {
+        // Assuming `lastDirectionsJson` is not null and contains the JSON response with all routes
+        val jsonResponse = JSONObject(lastDirectionsJson)
+        val routesArray = jsonResponse.getJSONArray("routes")
+        val route = routesArray.getJSONObject(routeIndex)
+        val legs = route.getJSONArray("legs")
+
+        if (legs.length() > 0) {
+            val leg = legs.getJSONObject(0)
+
+            travelDistance = leg.getJSONObject("distance").getString("text")
+            travelTime = leg.getJSONObject("duration").getString("text")
+            directionSteps.clear() // Clear existing steps
+
+            val steps = leg.getJSONArray("steps")
+            for (i in 0 until steps.length()) {
+                val step = steps.getJSONObject(i)
+                var instruction = step.getString("html_instructions")
+                instruction = Html.fromHtml(instruction).toString()
+                directionSteps.add(instruction)
+            }
+        }
+    }
+
 
     /**
      * This function displays direction steps in a bottom sheet dialog.
@@ -375,6 +433,19 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             }
     }
 
+    // This function should be called when a user selects a hotspot.
+    private fun onHotspotSelected(hotspotName: String) {
+        selectedHotspotName = hotspotName  // Update the selected hotspot name
+        selectedRouteIndex = 0  // Reset to the primary route
+
+        // Draw the initial route based on the last directions fetched
+        lastDirectionsJson?.let {
+            drawRoute(it)  // This will draw all routes and set click listeners
+            displaySelectedRouteDirections(selectedRouteIndex)  // This will show the steps for the primary route
+            showDirectionSteps(selectedHotspotName!!)  // This will display the direction steps in the UI
+        }
+    }
+
     /**
      * Asynchronously fetches route directions from the Google Directions API.
      * Calls [drawRoute] to display the route on the map.
@@ -383,14 +454,17 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
      * @param origin The starting point for the route
      * @param destination The destination point for the route
      */
-    private suspend fun getDirections(context: Context, origin: LatLng, destination: LatLng) {
+    // When initially fetching directions, after getting the response:
+    private suspend fun getDirections(context: Context, origin: LatLng, destination: LatLng, hotspotName: String) {
         val response = getGoogleDirections(context, origin, destination)
         if (response != null) {
-            drawRoute(response)
+            selectedHotspotName = hotspotName // Set the selected hotspot name
+            drawRoute(response) // Draw the route and internally handle direction steps display
         } else {
             Log.e("MapsActivity", "Google Directions API returned null.")
         }
     }
+
 
     /**
      * Called when the Google Map is ready to be used.
@@ -618,11 +692,15 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         // Get the destination LatLng from the marker
         val destination = marker.position
 
+        // Assume the marker's title is used to store the hotspot name
+        val hotspotName = marker.title ?: "Unknown Hotspot"
+
         // Launch a coroutine to fetch directions to the clicked marker
         lifecycleScope.launch {
-            getDirections(this@MapsActivity, userLocation, destination)
+            getDirections(this@MapsActivity, userLocation, destination, hotspotName)
         }
 
         return true  // Consumed the click event
     }
+
 }
