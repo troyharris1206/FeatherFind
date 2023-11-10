@@ -35,7 +35,9 @@ class AddSighting : Fragment() {
 
     companion object {
         fun newInstance() = AddSighting()
+        private const val LOCATION_PERMISSION_REQUEST_CODE = 1
     }
+
 
     private lateinit var viewModel: AddSightingViewModel
     private lateinit var binding: FragmentAddSightingBinding
@@ -45,6 +47,13 @@ class AddSighting : Fragment() {
     private var CAMERA_REQUEST = false
 
     private lateinit var imagePickerLauncher: ActivityResultLauncher<Intent>
+
+    private fun requestLocationPermissions() {
+        requestPermissions(
+            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+            LOCATION_PERMISSION_REQUEST_CODE
+        )
+    }
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreateView(
@@ -92,6 +101,8 @@ class AddSighting : Fragment() {
                 }
             }
         }
+
+
 
         binding = FragmentAddSightingBinding.inflate(layoutInflater)
 
@@ -187,45 +198,27 @@ class AddSighting : Fragment() {
 
         //When the user clicks the add sighting button
         btnAddSighting.setOnClickListener() {
-            //If the user has entered a value for all of the fields
             if (txtBirdName.text.isNotEmpty() && txtBirdSpecies.text.isNotEmpty() && sightingDate.text != "Select Date"
-                && sightingTime.text != "Select Time" && txtSightingDescription.text.isNotEmpty()){
-                val mainActivity = activity as? MainActivity
+                && sightingTime.text != "Select Time" && txtSightingDescription.text.isNotEmpty()) {
 
-                //Passes all the user input to the method that adds them to the db
-                if (mainActivity != null) {
-                    viewModel.addSightingInfo(
-                        txtBirdName.text.toString(),
-                        txtBirdSpecies.text.toString(),
-                        sightingDate.text.toString(),
-                        sightingTime.text.toString(),
-                        txtSightingDescription.text.toString()
-                    )
-
-                    // Sighting Info added successfully
-                    Toast.makeText(
-                        mainActivity,
-                        "Sighting info added successfully!",
-                        Toast.LENGTH_SHORT
-                    ).show()
-
-                    //Sets all the fields to default
-                    txtBirdName.text = null
-                    txtBirdSpecies.text = null
-                    sightingDate.text = "Select Date"
-                    sightingTime.text = "Select Time"
-                    txtSightingDescription.text = null
+                // Check for location permissions before adding a sighting
+                if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    // Request location permissions if not granted
+                    requestLocationPermissions()
+                } else {
+                    // Permissions already granted, proceed with adding sighting
+                    addSightingWithLocation()
                 }
-            }
-            //User missed a field
-            else{
+            } else {
+                // User missed a field
                 Toast.makeText(
-                    mainActivity,
+                    requireContext(),
                     "Please make sure that you've filled in all the fields.",
                     Toast.LENGTH_SHORT
                 ).show()
             }
         }
+
 
         //When the user clicks the add photo button
         btnAddPhoto.setOnClickListener {
@@ -275,8 +268,56 @@ class AddSighting : Fragment() {
 //            popupMenu.show()
         }
 
-
         return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        viewModel = ViewModelProvider(this).get(AddSightingViewModel::class.java)
+        context?.let { ctx ->
+            viewModel.initLocationService(ctx)
+        }
+    }
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        when (requestCode) {
+            LOCATION_PERMISSION_REQUEST_CODE -> {
+                if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
+                    // Permissions granted, proceed with adding sighting
+                    addSightingWithLocation()
+                } else {
+                    // Permissions denied, handle accordingly
+                    Toast.makeText(requireContext(), "Location permission is required to add a sighting.", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun addSightingWithLocation() {
+        val mainActivity = activity as? MainActivity
+        if (mainActivity != null) {
+            viewModel.addSightingWithLocation(
+                requireContext(),  // Pass context to the ViewModel method
+                binding.txtBirdName.text.toString(),
+                binding.txtBirdSpecies.text.toString(),
+                binding.datePicker.text.toString(),
+                binding.sightingTimePicker.text.toString(),
+                binding.txtSightingDescription.text.toString(),
+                {
+                    Toast.makeText(mainActivity, "Sighting info added successfully!", Toast.LENGTH_SHORT).show()
+                    resetSightingForm()
+                },
+                { e ->
+                    Toast.makeText(mainActivity, "Error adding sighting: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            )
+        }
+    }
+    private fun resetSightingForm() {
+        binding.txtBirdName.text = null
+        binding.txtBirdSpecies.text = null
+        binding.datePicker.text = "Select Date"
+        binding.sightingTimePicker.text = "Select Time"
+        binding.txtSightingDescription.text = null
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
@@ -285,3 +326,4 @@ class AddSighting : Fragment() {
         // TODO: Use the ViewModel
     }
 }
+
