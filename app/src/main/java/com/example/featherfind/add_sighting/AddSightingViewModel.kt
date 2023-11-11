@@ -35,10 +35,16 @@ class AddSightingViewModel : ViewModel() {
         dateOfSighting: String,
         timeOfSighting: String,
         sightingDescription: String,
+        hotspotLatitude: Double? = null,
+        hotspotLongitude: Double? = null,
         onSuccess: () -> Unit,
         onFailure: (Exception) -> Unit
     ) {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+        if (hotspotLatitude != null && hotspotLongitude != null) {
+            // Hotspot coordinates are provided, use them
+            addSightingInfo(birdName, birdSpecies, dateOfSighting, timeOfSighting, sightingDescription, hotspotLatitude, hotspotLongitude, onSuccess, onFailure)
+        } else if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            // No hotspot coordinates, use current location
             val locationTask: Task<Location> = fusedLocationClient.lastLocation
             locationTask.addOnSuccessListener { location: Location? ->
                 location?.let {
@@ -52,6 +58,40 @@ class AddSightingViewModel : ViewModel() {
         }
     }
 
+    fun addSightingWithCurrentLocation(
+        context: Context,
+        birdName: String,
+        birdSpecies: String,
+        dateOfSighting: String,
+        timeOfSighting: String,
+        sightingDescription: String,
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            val locationTask: Task<Location> = fusedLocationClient.lastLocation
+            locationTask.addOnSuccessListener { location: Location? ->
+                location?.let {
+                    // Use current location for sighting
+                    addSightingInfo(
+                        birdName,
+                        birdSpecies,
+                        dateOfSighting,
+                        timeOfSighting,
+                        sightingDescription,
+                        location.longitude,
+                        location.latitude,
+                        onSuccess,
+                        onFailure
+                    )
+                } ?: onFailure(Exception("Location data not available"))
+            }.addOnFailureListener { exception ->
+                onFailure(exception)
+            }
+        } else {
+            onFailure(SecurityException("Location permission not granted"))
+        }
+    }
     internal fun addSightingInfo(
         birdName: String,
         birdSpecies: String,

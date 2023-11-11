@@ -9,13 +9,10 @@ import android.graphics.Bitmap
 import android.os.Build
 import androidx.lifecycle.ViewModelProvider
 import android.os.Bundle
-import android.provider.MediaStore
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.WindowManager
-import android.widget.EditText
 import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
@@ -23,7 +20,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import com.example.featherfind.MainActivity
-import com.example.featherfind.R
 import com.example.featherfind.databinding.FragmentAddSightingBinding
 import java.text.SimpleDateFormat
 import java.time.LocalDateTime
@@ -34,8 +30,15 @@ import java.util.Locale
 class AddSighting : Fragment() {
 
     companion object {
-        fun newInstance() = AddSighting()
-        private const val LOCATION_PERMISSION_REQUEST_CODE = 1
+        fun newInstance(longitude: Double, latitude: Double): AddSighting {
+            val fragment = AddSighting()
+            val args = Bundle().apply {
+                putDouble("longitude", longitude)
+                putDouble("latitude", latitude)
+            }
+            fragment.arguments = args
+            return fragment
+        }        private const val LOCATION_PERMISSION_REQUEST_CODE = 1
     }
 
 
@@ -47,7 +50,8 @@ class AddSighting : Fragment() {
     private var CAMERA_REQUEST = false
 
     private lateinit var imagePickerLauncher: ActivityResultLauncher<Intent>
-
+    private var hotspotLongitude: Double? = null
+    private var hotspotLatitude: Double? = null
     private fun requestLocationPermissions() {
         requestPermissions(
             arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
@@ -60,7 +64,8 @@ class AddSighting : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-
+        hotspotLongitude = arguments?.getDouble("longitude")
+        hotspotLatitude = arguments?.getDouble("latitude")
         val mainActivity = activity as? MainActivity
 
         //Used to get the user to add a photo to the entry
@@ -135,7 +140,7 @@ class AddSighting : Fragment() {
 
         //When the user clicks on the date option
         sightingDate.setOnClickListener() {
-            val mainActivity = activity as? MainActivity
+            val context = context ?: return@setOnClickListener // Use fragment's context
             //Displays a date picker to the user
             val datePickerListener =
                 DatePickerDialog.OnDateSetListener { _, year, monthOfYear, dayOfMonth ->
@@ -152,24 +157,22 @@ class AddSighting : Fragment() {
             val calendar = Calendar.getInstance()
 
             // Create a DatePickerDialog with the current date as the initial selection
-            val datePickerDialog = mainActivity?.let { main ->
+            val datePickerDialog =
                 DatePickerDialog(
-                    main,
+                    context,
                     datePickerListener,
                     calendar.get(Calendar.YEAR),
                     calendar.get(Calendar.MONTH),
                     calendar.get(Calendar.DAY_OF_MONTH)
                 )
-            }
-
             // Show the date picker dialog
             datePickerDialog?.show()
         }
 
         //When the user clicks the start time button drop down
         sightingTime.setOnClickListener() {
-            val mainActivity = activity as? MainActivity
-            val popupMenu = PopupMenu(mainActivity, sightingTime)
+            val context = context ?: return@setOnClickListener // Use fragment's context
+            val popupMenu = PopupMenu(context, sightingTime)
 
             //Adds all the time options
             for (timeOption in timeOptions) {
@@ -207,7 +210,7 @@ class AddSighting : Fragment() {
                     requestLocationPermissions()
                 } else {
                     // Permissions already granted, proceed with adding sighting
-                    addSightingWithLocation()
+                    addSightingAtLocation()
                 }
             } else {
                 // User missed a field
@@ -274,6 +277,10 @@ class AddSighting : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewModel = ViewModelProvider(this).get(AddSightingViewModel::class.java)
+
+        val hotspotLongitude = arguments?.getDouble("longitude", 0.0) ?: 0.0
+        val hotspotLatitude = arguments?.getDouble("latitude", 0.0) ?: 0.0
+
         context?.let { ctx ->
             viewModel.initLocationService(ctx)
         }
@@ -283,7 +290,7 @@ class AddSighting : Fragment() {
             LOCATION_PERMISSION_REQUEST_CODE -> {
                 if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
                     // Permissions granted, proceed with adding sighting
-                    addSightingWithLocation()
+                    addSightingAtLocation()
                 } else {
                     // Permissions denied, handle accordingly
                     Toast.makeText(requireContext(), "Location permission is required to add a sighting.", Toast.LENGTH_SHORT).show()
@@ -291,27 +298,50 @@ class AddSighting : Fragment() {
             }
         }
     }
-
-    private fun addSightingWithLocation() {
-        val mainActivity = activity as? MainActivity
-        if (mainActivity != null) {
+    private fun addSightingAtLocation() {
+        if (hotspotLatitude == null || hotspotLongitude == null) {
+            // Hotspot not selected, use current location
+            if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                requestLocationPermissions()
+            } else {
+                viewModel.addSightingWithCurrentLocation(
+                    requireContext(),
+                    binding.txtBirdName.text.toString(),
+                    binding.txtBirdSpecies.text.toString(),
+                    binding.datePicker.text.toString(),
+                    binding.sightingTimePicker.text.toString(),
+                    binding.txtSightingDescription.text.toString(),
+                    {
+                        Toast.makeText(requireContext(), "Sighting added successfully!", Toast.LENGTH_SHORT).show()
+                        resetSightingForm()
+                    },
+                    { e ->
+                        Toast.makeText(requireContext(), "Error adding sighting: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                )
+            }
+        } else {
+            // Hotspot selected, use provided coordinates
             viewModel.addSightingWithLocation(
-                requireContext(),  // Pass context to the ViewModel method
+                requireContext(),
                 binding.txtBirdName.text.toString(),
                 binding.txtBirdSpecies.text.toString(),
                 binding.datePicker.text.toString(),
                 binding.sightingTimePicker.text.toString(),
                 binding.txtSightingDescription.text.toString(),
+                hotspotLatitude!!,
+                hotspotLongitude!!,
                 {
-                    Toast.makeText(mainActivity, "Sighting info added successfully!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Sighting added successfully!", Toast.LENGTH_SHORT).show()
                     resetSightingForm()
                 },
                 { e ->
-                    Toast.makeText(mainActivity, "Error adding sighting: ${e.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Error adding sighting: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             )
         }
     }
+
     private fun resetSightingForm() {
         binding.txtBirdName.text = null
         binding.txtBirdSpecies.text = null

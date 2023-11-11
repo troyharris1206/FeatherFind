@@ -22,12 +22,14 @@ import android.widget.Button
 import android.widget.ListView
 import android.widget.SeekBar
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.example.featherfind.R
+import com.example.featherfind.add_sighting.AddSighting
 import com.example.featherfind.databinding.ActivityMapsBinding
 import com.example.featherfind.explore.BirdRepository.getGoogleDirections
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -50,11 +52,14 @@ import com.google.android.gms.maps.model.Polyline
 import com.google.android.gms.maps.model.PolylineOptions
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.maps.android.PolyUtil
 import org.json.JSONException
 import org.json.JSONObject
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.addCallback
 
 /**
  * MapsActivity: Activity to display Google Maps and hotspots.
@@ -90,6 +95,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     // Class-level variable to store the selected marker
     private var selectedMarker: Marker? = null
+    private val userSightingMarkers = mutableListOf<Marker>()
+
     /**
      * Called when the activity is created.
      * Initializes the map, ViewModel, and other UI components.
@@ -124,6 +131,17 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             filterHotspotsByDistance()
         }
 
+        onBackPressedDispatcher.addCallback(this) {
+                finish()
+        }
+
+        val sightingsSwitch: SwitchMaterial = findViewById(R.id.sightings)
+        sightingsSwitch.isChecked = false
+        sightingsSwitch.setOnCheckedChangeListener { _, isChecked ->
+            if(::mMap.isInitialized) {
+                updateMapMarkersBasedOnSwitch(isChecked)
+            }
+        }
         // Request the user's current location
         requestUserLocation()
         // Initialize SeekBar and TextView for maximum value
@@ -191,6 +209,18 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             }
         })
     }
+
+    private fun updateMapMarkersBasedOnSwitch(showSightings: Boolean) {
+        userSightingMarkers.forEach { marker ->
+            marker.isVisible = showSightings
+        }
+        allMarkers.forEach { marker ->
+            if (!userSightingMarkers.contains(marker)) {
+                marker.isVisible = !showSightings
+            }
+        }
+    }
+
     /**
      * Filters the list of hotspots based on their distance from the user's current location.
      * Only hotspots within 'maxDistance' meters are included.
@@ -204,6 +234,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             val distance = distanceBetween(userLocation, hotspotLocation)
             distance <= maxDistanceInMeters
         }
+        val sightingsSwitch: SwitchMaterial = findViewById(R.id.sightings)
+        updateMapMarkersBasedOnSwitch(sightingsSwitch.isChecked)
         updateMapMarkers(filteredHotspots, userSightings)
         Log.d("Debug", "Filtered Hotspots: $filteredHotspots")
     }
@@ -370,9 +402,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         // Find and store the selected marker
         selectedMarker = allMarkers.firstOrNull { it.tag == hotspotName }
 
-        // Hide other markers
-        updateMarkerVisibility(showAll = false)
-
         // Fetch user preference for distance unit (either "miles" or "kilometers")
         firestore.collection("Users").document(currentUser!!.uid).get()
             .addOnSuccessListener { document ->
@@ -480,11 +509,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
 
-        // Enable UI controls like zoom and current location button
+        // Enable UI controls
         mMap.uiSettings.isZoomControlsEnabled = true
         mMap.uiSettings.isMyLocationButtonEnabled = true
 
-        // Check for location permission
+        // Set location enabled if permissions are granted
         if (hasLocationPermission()) {
             if (ActivityCompat.checkSelfPermission(
                     this,
@@ -498,16 +527,24 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             }
             mMap.isMyLocationEnabled = true
         }
-        // Add markers to the map as soon as it's ready
-        updateMapMarkers(allHotspots, userSightings)
 
-        // Set marker click listener
+        // Fetch and display initial markers
+        // Initially show only hotspot markers
+        updateMapMarkers(allHotspots, userSightings)
+        updateMapMarkersBasedOnSwitch(false) // Hide user sighting markers initially
+
+        // Set up listener for the switch to toggle sighting markers
+        val sightingsSwitch: SwitchMaterial = findViewById(R.id.sightings)
+        sightingsSwitch.setOnCheckedChangeListener { _, isChecked ->
+            updateMapMarkersBasedOnSwitch(isChecked)
+        }
+
+        // Set marker and map click listeners
         mMap.setOnMarkerClickListener { marker ->
             onMarkerClick(marker)
             selectedHotspotName = marker.tag as? String ?: marker.title
-            false // or true, depending on whether you want to consume the event
+            false
         }
-        // Add map click listener
         mMap.setOnMapClickListener {
             behavior?.apply {
                 state = BottomSheetBehavior.STATE_COLLAPSED
@@ -515,6 +552,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             }
         }
     }
+
 
     /**
      * Clears existing markers and adds new ones for each hotspot.
@@ -525,41 +563,46 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun updateMapMarkers(hotspots: List<Hotspot>, userSightings: List<UserSighting>) {
         mMap.clear()
         allMarkers.clear()
+        userSightingMarkers.clear()
 
         val hotspotIcon = prepareMarkerIcon(R.drawable.baseline_location_on_24)
         hotspots.forEach { addMarker(it, hotspotIcon) }
 
         val sightingIcon = prepareMarkerIcon(R.drawable.baseline_location_on_25)
         sightingsByLocation.forEach { (location, sightings) ->
-            addMarkerForSightings(location, sightings, sightingIcon)
+            addMarkerForSightings(location, sightings, sightingIcon, isVisible = false) // Initially invisible
         }
 
         mMap.moveCamera(CameraUpdateFactory.newLatLng(userLocation))
     }
 
-    private fun addMarkerForSightings(location: LatLng, sightings: List<UserSighting>, markerIcon: BitmapDescriptor) {
-        // Use the first sighting for title, or create a summary
-        val title = sightings.first().birdName // Or create a summary title
+    private fun addMarkerForSightings(location: LatLng, sightings: List<UserSighting>, markerIcon: BitmapDescriptor, isVisible: Boolean) {
+        val title = sightings.first().birdName
         val marker = mMap.addMarker(
             MarkerOptions()
                 .position(location)
                 .title(title)
                 .icon(markerIcon)
+                .visible(isVisible) // Set initial visibility
         )
-        marker?.tag = sightings // Assign the list of sightings to the tag
-        marker?.let { allMarkers.add(it) }
+        marker?.tag = sightings
+        marker?.let {
+            allMarkers.add(it)
+            userSightingMarkers.add(it) // Add to the user sighting markers list
+        }
     }
+
     // Call this function when a hotspot is selected or direction steps are closed
     private fun updateMarkerVisibility(showAll: Boolean) {
         for (marker in allMarkers) {
-            if (showAll) {
-                marker.isVisible = true
+            marker.isVisible = if (showAll) {
+                true // Show all markers if showAll is true
             } else {
-                // Hide all markers except the selected one
-                marker.isVisible = marker == selectedMarker
+                marker == selectedMarker // Only show the selected marker otherwise
             }
         }
     }
+
 
     private fun addMarker(location: Any, markerIcon: BitmapDescriptor) {
         val locationLatLng = when (location) {
@@ -725,13 +768,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
      */
     private fun onMarkerClick(marker: Marker): Boolean {
         currentPolyline?.remove() // Remove existing polyline
+        selectedMarker = marker // Assign the clicked marker to selectedMarker
 
         when (val selectedLocation = marker.tag) {
             is Hotspot -> {
-                val destination = LatLng(selectedLocation.longitude, selectedLocation.latitude)
-                lifecycleScope.launch {
-                    getDirections(this@MapsActivity, userLocation, destination, selectedLocation.name)
-                }
+                val hotspot = marker.tag as Hotspot
+                showHotspotOptionsDialog(hotspot)
             }
             is List<*> -> {
                 selectedLocation.filterIsInstance<UserSighting>().let { sightings ->
@@ -743,6 +785,34 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         }
         return true
     }
+    private fun showHotspotOptionsDialog(hotspot: Hotspot) {
+        val options = arrayOf("Get Directions", "Add Sighting")
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Choose an option for ${hotspot.name}")
+        builder.setItems(options) { _, which ->
+            when (which) {
+                0 -> getDirectionsForHotspot(hotspot)
+                1 -> openAddSightingFragment(hotspot)
+            }
+        }
+        builder.show()
+    }
+
+    private fun getDirectionsForHotspot(hotspot: Hotspot) {
+        val destination = LatLng(hotspot.longitude, hotspot.latitude)
+        lifecycleScope.launch {
+            getDirections(this@MapsActivity, userLocation, destination, hotspot.name)
+        }
+    }
+
+    private fun openAddSightingFragment(hotspot: Hotspot) {
+        val fragment = AddSighting.newInstance(hotspot.longitude, hotspot.latitude)
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.frameLayout, AddSighting.newInstance(hotspot.longitude, hotspot.latitude))
+            .addToBackStack(null) // Add this transaction to the back stack
+            .commit()
+    }
+
 
     private fun displaySightingDetails(sightings: List<UserSighting>) {
         val bottomSheetDialog = BottomSheetDialog(this)
@@ -772,7 +842,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             Log.d("MapsActivity", "Fetching user sightings on init")
             val db = FirebaseFirestore.getInstance()
             val currentUserUID = FirebaseAuth.getInstance().currentUser?.uid
-
             if (currentUserUID != null) {
                 try {
                     val documents = db.collection("Sightings")
@@ -788,7 +857,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                         for (document in documents) {
                             val sighting = document.toObject(UserSighting::class.java)
                             if (sighting.latitude != 0.0 && sighting.longitude != 0.0) {
-                                val sightingLatLng = LatLng(sighting.latitude, sighting.longitude)
+                                val sightingLatLng = LatLng(sighting.longitude, sighting.latitude)
                                 var added = false
                                 for ((existingLocation, sightingsList) in sightingsByLocation) {
                                     if (distanceBetween(sightingLatLng, existingLocation) <= 50) {
@@ -810,6 +879,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             }
         }
     }
+
 
     private fun prepareMarkerIcon(drawableResId: Int): BitmapDescriptor {
         val density = resources.displayMetrics.density

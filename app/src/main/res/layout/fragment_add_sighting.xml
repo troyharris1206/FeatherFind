@@ -36,8 +36,8 @@
 
         <ScrollView
             android:id="@+id/scrollView2"
-            android:layout_width="352dp"
-            android:layout_height="563dp"
+            android:layout_width="350dp"
+            android:layout_height="0dp"
             android:layout_marginStart="18dp"
             android:layout_marginTop="18dp"
             android:layout_marginEnd="18dp"
@@ -179,38 +179,52 @@
                             android:inputType="textMultiLine"
                             android:textSize="16sp" />
 
-                        <Button
-                            android:id="@+id/btnAddPhoto"
-                            android:layout_width="129dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginLeft="100dp"
-                            android:layout_marginTop="10dp"
-                            android:layout_marginRight="100dp"
-                            android:backgroundTint="#6BF98E55"
-                            android:text="Add photo to sighting"
-                            android:textAlignment="center"
-                            android:textColor="@color/black"
-                            android:textSize="10sp"
-                            android:textStyle="bold" />
-
-                        <Button
-                            android:id="@+id/btnAddSighting"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginLeft="100dp"
-                            android:layout_marginTop="10dp"
-                            android:layout_marginRight="100dp"
-                            android:backgroundTint="#F98E55"
-                            android:text="Add Sighting"
-                            android:textAlignment="center"
-                            android:textColor="@color/black"
-                            android:textSize="10sp"
-                            android:textStyle="bold" />
-
 
                     </LinearLayout>
                 </LinearLayout>
 
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+
+                    <Button
+                        android:id="@+id/btnAddPhoto"
+                        android:layout_width="150dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="100dp"
+                        android:layout_marginTop="10dp"
+                        android:layout_marginRight="100dp"
+                        android:backgroundTint="#6BF98E55"
+                        android:text="Add photo to sighting"
+                        android:textAlignment="center"
+                        android:textColor="@color/black"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+
+
+                    <Button
+                        android:id="@+id/btnAddSighting"
+                        android:layout_width="150dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="100dp"
+                        android:layout_marginTop="10dp"
+                        android:layout_marginRight="100dp"
+                        android:backgroundTint="#F98E55"
+                        android:text="Add Sighting"
+                        android:textAlignment="center"
+                        android:textColor="@color/black"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+
+                    <Space
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="0.1" />
+
+
+                </LinearLayout>
             </LinearLayout>
         </ScrollView>
 
