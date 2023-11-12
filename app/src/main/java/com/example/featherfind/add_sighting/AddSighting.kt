@@ -10,6 +10,7 @@ import android.os.Build
 import androidx.lifecycle.ViewModelProvider
 import android.os.Bundle
 import android.provider.MediaStore
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -46,6 +47,21 @@ class AddSighting : Fragment() {
 
     private lateinit var imagePickerLauncher: ActivityResultLauncher<Intent>
 
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == CAMERA_PERMISSION_REQUEST) {
+            // Check if the camera permission is granted
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permission granted, you can now launch the camera activity
+                val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+                imagePickerLauncher.launch(intent)
+            } else {
+                // Permission denied, handle this case accordingly
+                Toast.makeText(requireContext(), "Camera permission denied", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -54,7 +70,6 @@ class AddSighting : Fragment() {
 
         val mainActivity = activity as? MainActivity
 
-        //Used to get the user to add a photo to the entry
         imagePickerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
                 val data: Intent? = result.data
@@ -229,52 +244,49 @@ class AddSighting : Fragment() {
 
         //When the user clicks the add photo button
         btnAddPhoto.setOnClickListener {
-            Toast.makeText(
-                mainActivity,
-                "Feature coming in Final POE.",
-                Toast.LENGTH_SHORT
-            ).show()
-//            val popupMenu = PopupMenu(requireContext(), btnAddPhoto)
-//            popupMenu.menuInflater.inflate(R.menu.menu_photo_options, popupMenu.menu)
-//            popupMenu.setOnMenuItemClickListener { item ->
-//                when (item.itemId) {
-//                    R.id.menu_select_photo -> {
-//                        IMAGE_PICKER_REQUEST = true
-//                        // Launch the image picker
-//                        val intent = Intent(Intent.ACTION_GET_CONTENT)
-//                        intent.type = "image/*"
-//                        imagePickerLauncher.launch(intent)
-//                        true
-//                    }
-//                    R.id.menu_take_photo -> {
-//                        // Check if the camera permission is granted
-//                        val hasCameraPermission = ActivityCompat.checkSelfPermission(
-//                            requireContext(),
-//                            Manifest.permission.CAMERA
-//                        ) == PackageManager.PERMISSION_GRANTED
-//
-//                        // Request the camera permission if not granted
-//                        if (!hasCameraPermission) {
-//                            ActivityCompat.requestPermissions(
-//                                requireActivity(),
-//                                arrayOf(Manifest.permission.CAMERA),
-//                                CAMERA_PERMISSION_REQUEST
-//                            )
-//                            return@setOnMenuItemClickListener true // Return true to indicate the action was handled
-//                        }
-//
-//                        // Launch the camera activity if permission is granted
-//                        CAMERA_REQUEST = true
-//                        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-//                        imagePickerLauncher.launch(intent)
-//                        true
-//                    }
-//                    else -> false
-//                }
-//            }
-//            popupMenu.show()
-        }
+            val popupMenu = PopupMenu(requireContext(), btnAddPhoto)
+            popupMenu.menuInflater.inflate(R.menu.menu_photo_options, popupMenu.menu)
+            popupMenu.setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    R.id.menu_select_photo -> {
+                        IMAGE_PICKER_REQUEST = true
+                        // Launch the image picker
+                        val intent = Intent(Intent.ACTION_GET_CONTENT)
+                        intent.type = "image/*"
+                        imagePickerLauncher.launch(intent)
+                        true
+                    }
+                    R.id.menu_take_photo -> {
+                        // Check if the camera permission is granted
+                        val hasCameraPermission = ActivityCompat.checkSelfPermission(
+                            requireContext(),
+                            Manifest.permission.CAMERA
+                        ) == PackageManager.PERMISSION_GRANTED
 
+                        // Request the camera permission if not granted
+                        if (!hasCameraPermission) {
+                            ActivityCompat.requestPermissions(
+                                requireActivity(),
+                                arrayOf(Manifest.permission.CAMERA),
+                                CAMERA_PERMISSION_REQUEST
+                            )
+                        }
+
+                        if (hasCameraPermission) {
+                            CAMERA_REQUEST = true
+                            // Launch the camera activity
+                            val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+                            imagePickerLauncher.launch(intent)
+                        } else {
+                            Toast.makeText(requireContext(), "Camera permission not granted", Toast.LENGTH_SHORT).show()
+                        }
+                        true
+                    }
+                    else -> false
+                }
+            }
+            popupMenu.show()
+        }
 
         return binding.root
     }

@@ -54,8 +54,8 @@ class AddSightingViewModel : ViewModel() {
         val storage = FirebaseStorage.getInstance()
         val storageRef = storage.reference
         // Assigning the photo name
-        val photoName = "photos/${System.currentTimeMillis()}.jpg"
-        val photoRef = storageRef.child(photoName)
+        this.photoReference = "photos/${System.currentTimeMillis()}.jpg"
+        val photoRef = storageRef.child(this.photoReference)
 
         when (photo) {
             is Uri -> {
@@ -63,13 +63,19 @@ class AddSightingViewModel : ViewModel() {
                 val uploadTask = photoRef.putFile(photo)
                 uploadTask.addOnSuccessListener { taskSnapshot ->
                     // Photo uploaded successfully, assigning the photo reference
-                    photoReference = photoName
+                    Toast.makeText(
+                        mainActivity,
+                        "Photo successfully added",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }.addOnFailureListener { exception ->
                     Toast.makeText(
                         mainActivity,
                         "Error occurred: $exception",
                         Toast.LENGTH_SHORT
                     ).show()
+
+                    this.photoReference = ""
                 }
             }
             is Bitmap -> {
@@ -82,13 +88,19 @@ class AddSightingViewModel : ViewModel() {
                 val uploadTask = photoRef.putBytes(data)
                 uploadTask.addOnSuccessListener { taskSnapshot ->
                     // Photo uploaded successfully, assigning the photo reference
-                    photoReference = photoName
+                    Toast.makeText(
+                        mainActivity,
+                        "Photo successfully added",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }.addOnFailureListener { exception ->
                     Toast.makeText(
                         mainActivity,
                         "Error occurred: $exception",
                         Toast.LENGTH_SHORT
                     ).show()
+
+                    this.photoReference = ""
                 }
             }
             else -> {
@@ -97,10 +109,9 @@ class AddSightingViewModel : ViewModel() {
                     "Unsupported photo type",
                     Toast.LENGTH_SHORT
                 ).show()
+
+                this.photoReference = ""
             }
         }
     }
-
-
-
 }
