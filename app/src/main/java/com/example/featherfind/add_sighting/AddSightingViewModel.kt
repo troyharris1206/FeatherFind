@@ -1,30 +1,114 @@
 package com.example.featherfind.add_sighting
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.location.Location
 import android.net.Uri
-import android.util.Log
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
-import com.example.featherfind.MainActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import java.io.ByteArrayOutputStream
-
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.tasks.Task
 class AddSightingViewModel : ViewModel() {
 
     private var photoReference: String = ""
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
 
     //Adds the sighting info added by the user into the db
-    fun addSightingInfo(birdName: String, birdSpecies: String, dateOfSighting: String, timeOfSighting: String, sightingDescription: String){
+    fun initLocationService(context: Context) {
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+    }
 
+    fun addSightingWithLocation(
+        context: Context,
+        birdName: String,
+        birdSpecies: String,
+        dateOfSighting: String,
+        timeOfSighting: String,
+        sightingDescription: String,
+        hotspotLatitude: Double? = null,
+        hotspotLongitude: Double? = null,
+        photoReference: String,
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        if (hotspotLatitude != null && hotspotLongitude != null) {
+            // Hotspot coordinates are provided, use them
+            addSightingInfo(birdName, birdSpecies, dateOfSighting, timeOfSighting, sightingDescription, hotspotLatitude, hotspotLongitude,photoReference, onSuccess, onFailure)
+        } else if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            // No hotspot coordinates, use current location
+            val locationTask: Task<Location> = fusedLocationClient.lastLocation
+            locationTask.addOnSuccessListener { location: Location? ->
+                location?.let {
+                    addSightingInfo(birdName, birdSpecies, dateOfSighting, timeOfSighting, sightingDescription, location.latitude, location.longitude,photoReference, onSuccess, onFailure)
+                }
+            }.addOnFailureListener { exception ->
+                onFailure(exception)
+            }
+        } else {
+            onFailure(SecurityException("Location permission not granted"))
+        }
+    }
+
+    fun addSightingWithCurrentLocation(
+        context: Context,
+        birdName: String,
+        birdSpecies: String,
+        dateOfSighting: String,
+        timeOfSighting: String,
+        sightingDescription: String,
+        photoReference: String,
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            val locationTask: Task<Location> = fusedLocationClient.lastLocation
+            locationTask.addOnSuccessListener { location: Location? ->
+                location?.let {
+                    // Use current location for sighting
+                    addSightingInfo(
+                        birdName,
+                        birdSpecies,
+                        dateOfSighting,
+                        timeOfSighting,
+                        sightingDescription,
+                        location.longitude,
+                        location.latitude,
+                        photoReference,
+                        onSuccess,
+                        onFailure
+                    )
+                } ?: onFailure(Exception("Location data not available"))
+            }.addOnFailureListener { exception ->
+                onFailure(exception)
+            }
+        } else {
+            onFailure(SecurityException("Location permission not granted"))
+        }
+    }
+    internal fun addSightingInfo(
+        birdName: String,
+        birdSpecies: String,
+        dateOfSighting: String,
+        timeOfSighting: String,
+        sightingDescription: String,
+        latitude: Double,
+        longitude: Double,
+        photoReference: String,
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
         val db = FirebaseFirestore.getInstance()
-
-        // Get the current user's UID
         val user = FirebaseAuth.getInstance().currentUser
         val uid = user?.uid
 
-        //Creating a hashMap for input into the db
         val sightingData = hashMapOf(
             "userUID" to uid,
             "birdName" to birdName,
@@ -32,86 +116,50 @@ class AddSightingViewModel : ViewModel() {
             "dateOfSighting" to dateOfSighting,
             "timeOfSighting" to timeOfSighting,
             "sightingDescription" to sightingDescription,
-            "photoReference" to photoReference
+            "photoReference" to photoReference,
+            "latitude" to latitude,
+            "longitude" to longitude
         )
 
-        //Adds data to the db
         val userDocRef = db.collection("Sightings").document(System.currentTimeMillis().toString())
-
         userDocRef.set(sightingData)
             .addOnSuccessListener {
-                Log.d("Sighting Data", "Sighting data added successfully")
+                onSuccess()
             }
             .addOnFailureListener { e ->
-                Log.w("Sighting Data", "Error adding sighting data", e)
+                onFailure(e)
             }
-
     }
 
     // Used to upload the selected photo to Firebase Storage
-    fun uploadPhoto(photo: Any, mainActivity: MainActivity) {
-        // Firebase storage reference
+    fun uploadPhoto(photo: Any, context: Context, onPhotoUploaded: (String) -> Unit) {
         val storage = FirebaseStorage.getInstance()
         val storageRef = storage.reference
-        // Assigning the photo name
-        this.photoReference = "photos/${System.currentTimeMillis()}.jpg"
-        val photoRef = storageRef.child(this.photoReference)
+        val photoName = "photos/${System.currentTimeMillis()}.jpg"
+        val photoRef = storageRef.child(photoName)
 
-        when (photo) {
-            is Uri -> {
-                // Uploads photo to Firebase using Uri
-                val uploadTask = photoRef.putFile(photo)
-                uploadTask.addOnSuccessListener { taskSnapshot ->
-                    // Photo uploaded successfully, assigning the photo reference
-                    Toast.makeText(
-                        mainActivity,
-                        "Photo successfully added",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }.addOnFailureListener { exception ->
-                    Toast.makeText(
-                        mainActivity,
-                        "Error occurred: $exception",
-                        Toast.LENGTH_SHORT
-                    ).show()
-
-                    this.photoReference = ""
-                }
-            }
+        val uploadTask = when (photo) {
+            is Uri -> photoRef.putFile(photo)
             is Bitmap -> {
-                // Convert Bitmap to ByteArray
                 val baos = ByteArrayOutputStream()
                 photo.compress(Bitmap.CompressFormat.JPEG, 100, baos)
                 val data = baos.toByteArray()
-
-                // Uploads photo to Firebase using ByteArray
-                val uploadTask = photoRef.putBytes(data)
-                uploadTask.addOnSuccessListener { taskSnapshot ->
-                    // Photo uploaded successfully, assigning the photo reference
-                    Toast.makeText(
-                        mainActivity,
-                        "Photo successfully added",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }.addOnFailureListener { exception ->
-                    Toast.makeText(
-                        mainActivity,
-                        "Error occurred: $exception",
-                        Toast.LENGTH_SHORT
-                    ).show()
-
-                    this.photoReference = ""
-                }
+                photoRef.putBytes(data)
             }
             else -> {
-                Toast.makeText(
-                    mainActivity,
-                    "Unsupported photo type",
-                    Toast.LENGTH_SHORT
-                ).show()
-
-                this.photoReference = ""
+                Toast.makeText(context, "Unsupported photo type", Toast.LENGTH_SHORT).show()
+                return
             }
+        }
+
+        uploadTask.addOnSuccessListener { taskSnapshot ->
+            // Fetching the download URL of the uploaded photo
+            photoRef.downloadUrl.addOnSuccessListener { uri ->
+                // Pass the download URL to the callback
+                onPhotoUploaded(uri.toString())
+            }
+        }.addOnFailureListener { exception ->
+            Toast.makeText(context, "Error occurred: $exception", Toast.LENGTH_SHORT).show()
         }
     }
 }

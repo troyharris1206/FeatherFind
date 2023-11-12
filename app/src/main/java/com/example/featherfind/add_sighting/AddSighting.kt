@@ -10,13 +10,10 @@ import android.os.Build
 import androidx.lifecycle.ViewModelProvider
 import android.os.Bundle
 import android.provider.MediaStore
-import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.WindowManager
-import android.widget.EditText
 import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
@@ -35,8 +32,17 @@ import java.util.Locale
 class AddSighting : Fragment() {
 
     companion object {
-        fun newInstance() = AddSighting()
+        fun newInstance(longitude: Double, latitude: Double): AddSighting {
+            val fragment = AddSighting()
+            val args = Bundle().apply {
+                putDouble("longitude", longitude)
+                putDouble("latitude", latitude)
+            }
+            fragment.arguments = args
+            return fragment
+        }        private const val LOCATION_PERMISSION_REQUEST_CODE = 1
     }
+
 
     private lateinit var viewModel: AddSightingViewModel
     private lateinit var binding: FragmentAddSightingBinding
@@ -46,20 +52,14 @@ class AddSighting : Fragment() {
     private var CAMERA_REQUEST = false
 
     private lateinit var imagePickerLauncher: ActivityResultLauncher<Intent>
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == CAMERA_PERMISSION_REQUEST) {
-            // Check if the camera permission is granted
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission granted, you can now launch the camera activity
-                val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-                imagePickerLauncher.launch(intent)
-            } else {
-                // Permission denied, handle this case accordingly
-                Toast.makeText(requireContext(), "Camera permission denied", Toast.LENGTH_SHORT).show()
-            }
-        }
+    private var hotspotLongitude: Double? = null
+    private var hotspotLatitude: Double? = null
+    private var currentPhotoRef: String? = null
+    private fun requestLocationPermissions() {
+        requestPermissions(
+            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+            LOCATION_PERMISSION_REQUEST_CODE
+        )
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -67,46 +67,41 @@ class AddSighting : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-
+        hotspotLongitude = arguments?.getDouble("longitude")
+        hotspotLatitude = arguments?.getDouble("latitude")
         val mainActivity = activity as? MainActivity
 
+        //Used to get the user to add a photo to the entry
         imagePickerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
                 val data: Intent? = result.data
                 if (IMAGE_PICKER_REQUEST) {
                     val imageUri = data?.data
                     if (imageUri != null) {
-                        // Handle the image URI here
-                        if (mainActivity != null) {
-                            viewModel.uploadPhoto(imageUri, mainActivity)
+                        viewModel.uploadPhoto(imageUri, requireContext()) { photoRef ->
+                            // Update the photo reference here
+                            currentPhotoRef = photoRef
                         }
                     } else {
-                        Toast.makeText(
-                            requireContext(),
-                            "Error selecting image",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        Toast.makeText(requireContext(), "Error selecting image", Toast.LENGTH_SHORT).show()
                     }
                     IMAGE_PICKER_REQUEST = false
-
                 } else if (CAMERA_REQUEST) {
-                    // Handle capturing the image here
                     val imageBitmap = data?.extras?.get("data") as? Bitmap
                     if (imageBitmap != null) {
-                        if (mainActivity != null) {
-                            viewModel.uploadPhoto(imageBitmap, mainActivity)
+                        viewModel.uploadPhoto(imageBitmap, requireContext()) { photoRef ->
+                            // Update the photo reference here
+                            currentPhotoRef = photoRef
                         }
                     } else {
-                        Toast.makeText(
-                            requireContext(),
-                            "Error capturing image",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        Toast.makeText(requireContext(), "Error capturing image", Toast.LENGTH_SHORT).show()
                     }
                     CAMERA_REQUEST = false
                 }
             }
         }
+
+
 
         binding = FragmentAddSightingBinding.inflate(layoutInflater)
 
@@ -139,7 +134,7 @@ class AddSighting : Fragment() {
 
         //When the user clicks on the date option
         sightingDate.setOnClickListener() {
-            val mainActivity = activity as? MainActivity
+            val context = context ?: return@setOnClickListener // Use fragment's context
             //Displays a date picker to the user
             val datePickerListener =
                 DatePickerDialog.OnDateSetListener { _, year, monthOfYear, dayOfMonth ->
@@ -156,24 +151,22 @@ class AddSighting : Fragment() {
             val calendar = Calendar.getInstance()
 
             // Create a DatePickerDialog with the current date as the initial selection
-            val datePickerDialog = mainActivity?.let { main ->
+            val datePickerDialog =
                 DatePickerDialog(
-                    main,
+                    context,
                     datePickerListener,
                     calendar.get(Calendar.YEAR),
                     calendar.get(Calendar.MONTH),
                     calendar.get(Calendar.DAY_OF_MONTH)
                 )
-            }
-
             // Show the date picker dialog
             datePickerDialog?.show()
         }
 
         //When the user clicks the start time button drop down
         sightingTime.setOnClickListener() {
-            val mainActivity = activity as? MainActivity
-            val popupMenu = PopupMenu(mainActivity, sightingTime)
+            val context = context ?: return@setOnClickListener // Use fragment's context
+            val popupMenu = PopupMenu(context, sightingTime)
 
             //Adds all the time options
             for (timeOption in timeOptions) {
@@ -202,45 +195,27 @@ class AddSighting : Fragment() {
 
         //When the user clicks the add sighting button
         btnAddSighting.setOnClickListener() {
-            //If the user has entered a value for all of the fields
             if (txtBirdName.text.isNotEmpty() && txtBirdSpecies.text.isNotEmpty() && sightingDate.text != "Select Date"
-                && sightingTime.text != "Select Time" && txtSightingDescription.text.isNotEmpty()){
-                val mainActivity = activity as? MainActivity
+                && sightingTime.text != "Select Time" && txtSightingDescription.text.isNotEmpty()) {
 
-                //Passes all the user input to the method that adds them to the db
-                if (mainActivity != null) {
-                    viewModel.addSightingInfo(
-                        txtBirdName.text.toString(),
-                        txtBirdSpecies.text.toString(),
-                        sightingDate.text.toString(),
-                        sightingTime.text.toString(),
-                        txtSightingDescription.text.toString()
-                    )
-
-                    // Sighting Info added successfully
-                    Toast.makeText(
-                        mainActivity,
-                        "Sighting info added successfully!",
-                        Toast.LENGTH_SHORT
-                    ).show()
-
-                    //Sets all the fields to default
-                    txtBirdName.text = null
-                    txtBirdSpecies.text = null
-                    sightingDate.text = "Select Date"
-                    sightingTime.text = "Select Time"
-                    txtSightingDescription.text = null
+                // Check for location permissions before adding a sighting
+                if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    // Request location permissions if not granted
+                    requestLocationPermissions()
+                } else {
+                    // Permissions already granted, proceed with adding sighting
+                    addSightingAtLocation()
                 }
-            }
-            //User missed a field
-            else{
+            } else {
+                // User missed a field
                 Toast.makeText(
-                    mainActivity,
+                    requireContext(),
                     "Please make sure that you've filled in all the fields.",
                     Toast.LENGTH_SHORT
                 ).show()
             }
         }
+
 
         //When the user clicks the add photo button
         btnAddPhoto.setOnClickListener {
@@ -270,16 +245,13 @@ class AddSighting : Fragment() {
                                 arrayOf(Manifest.permission.CAMERA),
                                 CAMERA_PERMISSION_REQUEST
                             )
+                            return@setOnMenuItemClickListener true // Return true to indicate the action was handled
                         }
 
-                        if (hasCameraPermission) {
-                            CAMERA_REQUEST = true
-                            // Launch the camera activity
-                            val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-                            imagePickerLauncher.launch(intent)
-                        } else {
-                            Toast.makeText(requireContext(), "Camera permission not granted", Toast.LENGTH_SHORT).show()
-                        }
+                        // Launch the camera activity if permission is granted
+                        CAMERA_REQUEST = true
+                        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+                        imagePickerLauncher.launch(intent)
                         true
                     }
                     else -> false
@@ -291,9 +263,94 @@ class AddSighting : Fragment() {
         return binding.root
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        viewModel = ViewModelProvider(this).get(AddSightingViewModel::class.java)
+
+        val hotspotLongitude = arguments?.getDouble("longitude", 0.0) ?: 0.0
+        val hotspotLatitude = arguments?.getDouble("latitude", 0.0) ?: 0.0
+
+        context?.let { ctx ->
+            viewModel.initLocationService(ctx)
+        }
+    }
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        when (requestCode) {
+            LOCATION_PERMISSION_REQUEST_CODE -> {
+                if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
+                    // Permissions granted, proceed with adding sighting
+                    addSightingAtLocation()
+                } else {
+                    // Permissions denied, handle accordingly
+                    Toast.makeText(requireContext(), "Location permission is required to add a sighting.", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+    private fun addSightingAtLocation() {
+        if (currentPhotoRef == null) {
+            Toast.makeText(requireContext(), "No photo selected", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (hotspotLatitude == null || hotspotLongitude == null) {
+            // Hotspot not selected, use current location
+            if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                requestLocationPermissions()
+            } else {
+                viewModel.addSightingWithCurrentLocation(
+                    requireContext(),
+                    binding.txtBirdName.text.toString(),
+                    binding.txtBirdSpecies.text.toString(),
+                    binding.datePicker.text.toString(),
+                    binding.sightingTimePicker.text.toString(),
+                    binding.txtSightingDescription.text.toString(),
+                    currentPhotoRef!!, // Pass the photo reference here
+                    {
+                        Toast.makeText(requireContext(), "Sighting added successfully!", Toast.LENGTH_SHORT).show()
+                        resetSightingForm()
+                    },
+                    { e ->
+                        Toast.makeText(requireContext(), "Error adding sighting: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                )
+            }
+        } else {
+            // Hotspot selected, use provided coordinates
+            viewModel.addSightingWithLocation(
+                requireContext(),
+                binding.txtBirdName.text.toString(),
+                binding.txtBirdSpecies.text.toString(),
+                binding.datePicker.text.toString(),
+                binding.sightingTimePicker.text.toString(),
+                binding.txtSightingDescription.text.toString(),
+                hotspotLatitude!!,
+                hotspotLongitude!!,
+                currentPhotoRef!!, // Pass the photo reference here
+                {
+                    Toast.makeText(requireContext(), "Sighting added successfully!", Toast.LENGTH_SHORT).show()
+                    resetSightingForm()
+                },
+                { e ->
+                    Toast.makeText(requireContext(), "Error adding sighting: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            )
+        }
+    }
+
+
+    private fun resetSightingForm() {
+        binding.txtBirdName.text = null
+        binding.txtBirdSpecies.text = null
+        binding.datePicker.text = "Select Date"
+        binding.sightingTimePicker.text = "Select Time"
+        binding.txtSightingDescription.text = null
+    }
+
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProvider(this).get(AddSightingViewModel::class.java)
         // TODO: Use the ViewModel
     }
 }
+
