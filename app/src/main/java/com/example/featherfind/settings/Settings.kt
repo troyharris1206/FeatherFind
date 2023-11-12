@@ -107,23 +107,37 @@ class Settings : Fragment() {
 
                     val updates = HashMap<String, Any>()
 
-                    if (rbMetric.isChecked && distance <= 5000) {
+                    if (rbMetric.isChecked && distance <= 5000 && distance >= 0.1) {
                         updates["measurementSystem"] = "Metric"
                         updates["maxDistance"] = distance.toString()
                     } else if (rbMetric.isChecked && distance > 5000) {
                         Toast.makeText(
                             context,
-                            "Please make sure the max distance entered is within the range specified.",
+                            "Max distance is out of range specified.",
                             Toast.LENGTH_SHORT
                         ).show()
                         return@setOnClickListener
-                    } else if (rbImperial.isChecked && distance <= 3106.86) {
+                    } else if (rbMetric.isChecked && distance < 0.1) {
+                        Toast.makeText(
+                            context,
+                            "Max distance is out of range specified.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        return@setOnClickListener
+                    } else if (rbImperial.isChecked && distance <= 3106.86 && distance >= 0.0062) {
                         updates["measurementSystem"] = "Imperial"
                         updates["maxDistance"] = distance.toString()
                     } else if (rbImperial.isChecked && distance > 3106.86) {
                         Toast.makeText(
                             context,
-                            "Please make sure the max distance entered is within the range specified.",
+                            "Max distance is out of range specified.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        return@setOnClickListener
+                    }else if (rbImperial.isChecked && distance < 0.0062) {
+                        Toast.makeText(
+                            context,
+                            "Max distance is out of range specified.",
                             Toast.LENGTH_SHORT
                         ).show()
                         return@setOnClickListener

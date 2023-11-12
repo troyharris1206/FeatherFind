@@ -37,7 +37,7 @@
 
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="520dp"
+        android:layout_height="wrap_content"
         android:layout_marginTop="25dp"
         android:layout_marginLeft="25dp"
         android:layout_marginRight="25dp"
@@ -51,12 +51,12 @@
 
             <TextView
                 android:id="@+id/txtMeasurement"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="50dp"
+                android:layout_gravity="center"
                 android:layout_marginTop="20dp"
-                android:layout_marginRight="50dp"
                 android:text="Measurement System"
+                android:textAlignment="center"
                 android:textColor="@color/black"
                 android:textSize="20dp" />
 
@@ -65,7 +65,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="5dp"
-                android:layout_marginLeft="50dp"
+                android:layout_gravity="center"
                 android:orientation="vertical">
 
                 <RadioButton
@@ -89,44 +89,42 @@
                 android:id="@+id/txtTravelDistance"
                 android:layout_width="290dp"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="50dp"
+                android:layout_gravity="center"
                 android:layout_marginTop="15dp"
-                android:layout_marginRight="50dp"
-                android:text="Maximum Travel Distance (Km)"
+                android:text="Maximum Travel Distance (Kilometers)"
+                android:textAlignment="center"
                 android:textColor="@color/black"
                 android:textSize="20dp" />
 
             <EditText
                 android:id="@+id/txtUserDistance"
-                android:layout_width="270dp"
-                android:layout_marginLeft="50dp"
+                android:layout_width="230dp"
+                android:layout_gravity="center"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="5dp"
                 android:backgroundTint="@color/black"
-                android:hint="Enter Maximum Travel Distance"
+                android:hint="Enter Max Travel Distance"
                 android:inputType="numberDecimal"
                 android:padding="5dip"
-                android:background="@drawable/scrollview_style"
-                android:text="15"/>
+                android:background="@drawable/scrollview_style" />
 
             <TextView
                 android:id="@+id/txtMinAndMax"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="50dp"
+                android:layout_gravity="center"
                 android:layout_marginTop="15dp"
-                android:layout_marginRight="50dp"
                 android:text="Min Value: 0.10\nMax Value: 5000.00"
                 android:textColor="@color/black"
                 android:textSize="12dp" />
 
             <Button
                 android:id="@+id/btnApplySettings"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="80dp"
+                android:layout_gravity="center"
                 android:layout_marginTop="25dp"
-                android:layout_marginRight="80dp"
+                android:layout_marginBottom="25dp"
                 android:backgroundTint="#F98E55"
                 android:text="Apply Setting Changes" />
 
