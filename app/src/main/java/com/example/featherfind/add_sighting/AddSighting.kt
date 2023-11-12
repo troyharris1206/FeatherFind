@@ -9,6 +9,7 @@ import android.graphics.Bitmap
 import android.os.Build
 import androidx.lifecycle.ViewModelProvider
 import android.os.Bundle
+import android.provider.MediaStore
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -20,6 +21,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import com.example.featherfind.MainActivity
+import com.example.featherfind.R
 import com.example.featherfind.databinding.FragmentAddSightingBinding
 import java.text.SimpleDateFormat
 import java.time.LocalDateTime
@@ -52,6 +54,7 @@ class AddSighting : Fragment() {
     private lateinit var imagePickerLauncher: ActivityResultLauncher<Intent>
     private var hotspotLongitude: Double? = null
     private var hotspotLatitude: Double? = null
+    private var currentPhotoRef: String? = null
     private fun requestLocationPermissions() {
         requestPermissions(
             arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
@@ -75,32 +78,23 @@ class AddSighting : Fragment() {
                 if (IMAGE_PICKER_REQUEST) {
                     val imageUri = data?.data
                     if (imageUri != null) {
-                        // Handle the image URI here
-                        if (mainActivity != null) {
-                            viewModel.uploadPhoto(imageUri, mainActivity)
+                        viewModel.uploadPhoto(imageUri, requireContext()) { photoRef ->
+                            // Update the photo reference here
+                            currentPhotoRef = photoRef
                         }
                     } else {
-                        Toast.makeText(
-                            requireContext(),
-                            "Error selecting image",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        Toast.makeText(requireContext(), "Error selecting image", Toast.LENGTH_SHORT).show()
                     }
                     IMAGE_PICKER_REQUEST = false
-
                 } else if (CAMERA_REQUEST) {
-                    // Handle capturing the image here
                     val imageBitmap = data?.extras?.get("data") as? Bitmap
                     if (imageBitmap != null) {
-                        if (mainActivity != null) {
-                            viewModel.uploadPhoto(imageBitmap, mainActivity)
+                        viewModel.uploadPhoto(imageBitmap, requireContext()) { photoRef ->
+                            // Update the photo reference here
+                            currentPhotoRef = photoRef
                         }
                     } else {
-                        Toast.makeText(
-                            requireContext(),
-                            "Error capturing image",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        Toast.makeText(requireContext(), "Error capturing image", Toast.LENGTH_SHORT).show()
                     }
                     CAMERA_REQUEST = false
                 }
@@ -225,50 +219,45 @@ class AddSighting : Fragment() {
 
         //When the user clicks the add photo button
         btnAddPhoto.setOnClickListener {
-            Toast.makeText(
-                mainActivity,
-                "Feature coming in Final POE.",
-                Toast.LENGTH_SHORT
-            ).show()
-//            val popupMenu = PopupMenu(requireContext(), btnAddPhoto)
-//            popupMenu.menuInflater.inflate(R.menu.menu_photo_options, popupMenu.menu)
-//            popupMenu.setOnMenuItemClickListener { item ->
-//                when (item.itemId) {
-//                    R.id.menu_select_photo -> {
-//                        IMAGE_PICKER_REQUEST = true
-//                        // Launch the image picker
-//                        val intent = Intent(Intent.ACTION_GET_CONTENT)
-//                        intent.type = "image/*"
-//                        imagePickerLauncher.launch(intent)
-//                        true
-//                    }
-//                    R.id.menu_take_photo -> {
-//                        // Check if the camera permission is granted
-//                        val hasCameraPermission = ActivityCompat.checkSelfPermission(
-//                            requireContext(),
-//                            Manifest.permission.CAMERA
-//                        ) == PackageManager.PERMISSION_GRANTED
-//
-//                        // Request the camera permission if not granted
-//                        if (!hasCameraPermission) {
-//                            ActivityCompat.requestPermissions(
-//                                requireActivity(),
-//                                arrayOf(Manifest.permission.CAMERA),
-//                                CAMERA_PERMISSION_REQUEST
-//                            )
-//                            return@setOnMenuItemClickListener true // Return true to indicate the action was handled
-//                        }
-//
-//                        // Launch the camera activity if permission is granted
-//                        CAMERA_REQUEST = true
-//                        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-//                        imagePickerLauncher.launch(intent)
-//                        true
-//                    }
-//                    else -> false
-//                }
-//            }
-//            popupMenu.show()
+            val popupMenu = PopupMenu(requireContext(), btnAddPhoto)
+            popupMenu.menuInflater.inflate(R.menu.menu_photo_options, popupMenu.menu)
+            popupMenu.setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    R.id.menu_select_photo -> {
+                        IMAGE_PICKER_REQUEST = true
+                        // Launch the image picker
+                        val intent = Intent(Intent.ACTION_GET_CONTENT)
+                        intent.type = "image/*"
+                        imagePickerLauncher.launch(intent)
+                        true
+                    }
+                    R.id.menu_take_photo -> {
+                        // Check if the camera permission is granted
+                        val hasCameraPermission = ActivityCompat.checkSelfPermission(
+                            requireContext(),
+                            Manifest.permission.CAMERA
+                        ) == PackageManager.PERMISSION_GRANTED
+
+                        // Request the camera permission if not granted
+                        if (!hasCameraPermission) {
+                            ActivityCompat.requestPermissions(
+                                requireActivity(),
+                                arrayOf(Manifest.permission.CAMERA),
+                                CAMERA_PERMISSION_REQUEST
+                            )
+                            return@setOnMenuItemClickListener true // Return true to indicate the action was handled
+                        }
+
+                        // Launch the camera activity if permission is granted
+                        CAMERA_REQUEST = true
+                        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+                        imagePickerLauncher.launch(intent)
+                        true
+                    }
+                    else -> false
+                }
+            }
+            popupMenu.show()
         }
 
         return binding.root
@@ -299,6 +288,11 @@ class AddSighting : Fragment() {
         }
     }
     private fun addSightingAtLocation() {
+        if (currentPhotoRef == null) {
+            Toast.makeText(requireContext(), "No photo selected", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         if (hotspotLatitude == null || hotspotLongitude == null) {
             // Hotspot not selected, use current location
             if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -311,6 +305,7 @@ class AddSighting : Fragment() {
                     binding.datePicker.text.toString(),
                     binding.sightingTimePicker.text.toString(),
                     binding.txtSightingDescription.text.toString(),
+                    currentPhotoRef!!, // Pass the photo reference here
                     {
                         Toast.makeText(requireContext(), "Sighting added successfully!", Toast.LENGTH_SHORT).show()
                         resetSightingForm()
@@ -331,6 +326,7 @@ class AddSighting : Fragment() {
                 binding.txtSightingDescription.text.toString(),
                 hotspotLatitude!!,
                 hotspotLongitude!!,
+                currentPhotoRef!!, // Pass the photo reference here
                 {
                     Toast.makeText(requireContext(), "Sighting added successfully!", Toast.LENGTH_SHORT).show()
                     resetSightingForm()
@@ -341,6 +337,7 @@ class AddSighting : Fragment() {
             )
         }
     }
+
 
     private fun resetSightingForm() {
         binding.txtBirdName.text = null
