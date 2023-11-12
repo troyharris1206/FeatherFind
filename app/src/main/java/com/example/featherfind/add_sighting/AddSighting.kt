@@ -351,6 +351,7 @@ class AddSighting : Fragment() {
         binding.datePicker.text = "Select Date"
         binding.sightingTimePicker.text = "Select Time"
         binding.txtSightingDescription.text = null
+        currentPhotoRef = null
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
