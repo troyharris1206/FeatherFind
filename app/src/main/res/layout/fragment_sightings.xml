@@ -1,9 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mainScrollView"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:fillViewport="true">
+
+<androidx.constraintlayout.widget.ConstraintLayout
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
     tools:context=".sightings.Sightings">
 
     <LinearLayout
@@ -65,12 +72,14 @@
         android:id="@+id/fragment_container"
         android:layout_width="match_parent"
         android:layout_height="540dp"
-        android:layout_marginTop="15dp"
         android:layout_marginLeft="30dp"
+        android:layout_marginTop="15dp"
         android:layout_marginRight="30dp"
+        android:layout_marginBottom="100dp"
+        android:background="@drawable/scrollview_style"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        android:background="@drawable/scrollview_style"
         app:layout_constraintTop_toBottomOf="@+id/linearLayout"
         app:layout_constraintVertical_bias="0.0">
 
@@ -82,11 +91,10 @@
 
             <Button
                 android:id="@+id/btnViewAllSightings"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="60dp"
+                android:layout_gravity="center"
                 android:layout_marginTop="8dp"
-                android:layout_marginRight="60dp"
                 android:backgroundTint="#F98E55"
                 android:text="View All Sightings" />
 
@@ -104,15 +112,14 @@
                     android:layout_height="50dp"
                     android:orientation="horizontal">
 
-
                     <Button
                         android:id="@+id/btnFromDate"
-                        android:layout_width="60dp"
+                        android:layout_width="80dp"
                         android:layout_height="40dp"
                         android:layout_marginLeft="30dp"
                         android:layout_marginTop="10dp"
                         android:layout_weight="1"
-                        android:backgroundTint="#F98E55"
+                        android:backgroundTint="#6BF98E55"
                         android:text="From"
                         android:textSize="11dp" />
 
@@ -127,12 +134,12 @@
 
                     <Button
                         android:id="@+id/btnToDate"
-                        android:layout_width="60dp"
+                        android:layout_width="80dp"
                         android:layout_height="40dp"
                         android:layout_marginTop="10dp"
                         android:layout_marginRight="30dp"
                         android:layout_weight="1"
-                        android:backgroundTint="#F98E55"
+                        android:backgroundTint="#6BF98E55"
                         android:text="To"
                         android:textSize="11dp" />
 
@@ -141,17 +148,17 @@
 
                 <Button
                     android:id="@+id/btnFilterByDates"
-                    android:layout_width="120dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="40dp"
-                    android:layout_marginLeft="118dp"
+                    android:layout_gravity="center"
                     android:backgroundTint="#F98E55"
-                    android:text="Search Filter"
+                    android:text="Search Between Dates"
                     android:textSize="11dp" />
 
 
             </LinearLayout>
 
-            <ScrollView
+            <androidx.core.widget.NestedScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
@@ -159,8 +166,9 @@
                     android:id="@+id/birdRecyclerView"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content" />
-            </ScrollView>
+            </androidx.core.widget.NestedScrollView>
         </LinearLayout>
     </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>

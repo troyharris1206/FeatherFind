@@ -1,7 +1,13 @@
-<!-- fragment_bird.xml -->
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mainScrollView"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+<androidx.constraintlayout.widget.ConstraintLayout
     android:id="@+id/frameLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -10,10 +16,11 @@
         <LinearLayout
             android:id="@+id/linearLayout"
             android:layout_width="match_parent"
-            android:layout_height="140dp"
+            android:layout_height="165dp"
             android:background="#F98E55"
             android:orientation="vertical"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
@@ -27,7 +34,14 @@
                     android:textColor="@color/white"
                     android:textSize="40sp" />
 
-        </LinearLayout>
+                <ImageView
+                    android:id="@+id/imageView"
+                    android:layout_width="match_parent"
+                    android:layout_height="64dp"
+                    android:src="@drawable/ic_explore"
+                    app:tint="@color/white"/>
+
+                </LinearLayout>
 
         <EditText
             android:id="@+id/searchBird"
@@ -35,6 +49,8 @@
             android:layout_width="286dp"
             android:layout_height="57dp"
             android:layout_marginTop="12dp"
+            android:background="@drawable/scrollview_style"
+            android:padding="5dip"
             android:ems="10"
             android:hint="Search"
             android:inputType="text"
@@ -48,23 +64,25 @@
             android:id="@+id/titleText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="5dp"
             android:layout_marginTop="12dp"
+            android:layout_marginEnd="5dp"
+            android:padding="8dp"
             android:text="Nearby Birds and Frequency in the Region Throughout the Year"
+            android:textAlignment="center"
             android:textSize="16sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
-            android:padding="8dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/searchBird" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerView"
-            android:layout_width="414dp"
+            android:layout_width="match_parent"
             android:layout_height="549dp"
+            android:layout_marginBottom="100dp"
             android:visibility="visible"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
-            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/titleText" />
 
         <ProgressBar
@@ -85,11 +103,23 @@
             android:id="@+id/btnHotspots"
             android:layout_width="75dp"
             android:layout_height="53dp"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="5dp"
             android:background="@drawable/map_location_dot_solid"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.48"
             app:layout_constraintStart_toEndOf="@+id/searchBird"
             app:layout_constraintTop_toBottomOf="@+id/linearLayout" />
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@color/white"
+            android:text="View Map"
+            android:textColor="@color/black"
+            app:layout_constraintEnd_toEndOf="@+id/btnHotspots"
+            app:layout_constraintStart_toStartOf="@+id/btnHotspots"
+            app:layout_constraintTop_toBottomOf="@+id/btnHotspots"
+            app:strokeColor="#000000" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>
