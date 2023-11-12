@@ -211,6 +211,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun updateMapMarkersBasedOnSwitch(showSightings: Boolean) {
+        if (showSightings) {
+            currentPolyline?.remove()
+            routePolylines.forEach { it.remove() }
+            routePolylines.clear()
+        }
         userSightingMarkers.forEach { marker ->
             marker.isVisible = showSightings
         }
@@ -822,9 +827,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         val sightingDetailsTextView = bottomSheetView.findViewById<TextView>(R.id.sighting_details)
 
         // Building the string for sighting names and details
-        val sightingNames = "Sightings: " + sightings.joinToString(separator = ", ") { it.birdName }
+        val sightingNames = "Sightings for this location: " + sightings.joinToString(separator = ", ") { it.birdName }
         val sightingDetails = sightings.joinToString(separator = "\n\n") { sighting ->
-            "Species: ${sighting.birdSpecies}\n" +
+            "Bird name: ${sighting.birdName}\n"+
+                    "Species: ${sighting.birdSpecies}\n" +
                     "Date: ${sighting.dateOfSighting}\n" +
                     "Time: ${sighting.timeOfSighting}\n" +
                     "Description: ${sighting.sightingDescription}"

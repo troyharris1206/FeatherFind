@@ -189,6 +189,13 @@
                     android:orientation="vertical">
 
 
+                    <ProgressBar
+                        android:id="@+id/progressBar"
+                        style="@style/Widget.AppCompat.ProgressBar"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:visibility="invisible" />
+
                     <Button
                         android:id="@+id/btnAddPhoto"
                         android:layout_width="150dp"
@@ -202,7 +209,6 @@
                         android:textColor="@color/black"
                         android:textSize="10sp"
                         android:textStyle="bold" />
-
 
                     <Button
                         android:id="@+id/btnAddSighting"
