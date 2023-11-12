@@ -3,6 +3,7 @@ package com.example.featherfind.add_sighting
 import android.Manifest
 import android.app.Activity
 import android.app.DatePickerDialog
+import android.app.ProgressDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -15,6 +16,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.PopupMenu
+import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -43,7 +45,7 @@ class AddSighting : Fragment() {
         }        private const val LOCATION_PERMISSION_REQUEST_CODE = 1
     }
 
-
+    private lateinit var progressBar: ProgressBar
     private lateinit var viewModel: AddSightingViewModel
     private lateinit var binding: FragmentAddSightingBinding
 
@@ -67,6 +69,7 @@ class AddSighting : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
+
         hotspotLongitude = arguments?.getDouble("longitude")
         hotspotLatitude = arguments?.getDouble("latitude")
         val mainActivity = activity as? MainActivity
@@ -78,23 +81,29 @@ class AddSighting : Fragment() {
                 if (IMAGE_PICKER_REQUEST) {
                     val imageUri = data?.data
                     if (imageUri != null) {
+                        progressBar.visibility = View.VISIBLE
                         viewModel.uploadPhoto(imageUri, requireContext()) { photoRef ->
                             // Update the photo reference here
                             currentPhotoRef = photoRef
+                            progressBar.visibility = View.GONE
                         }
                     } else {
                         Toast.makeText(requireContext(), "Error selecting image", Toast.LENGTH_SHORT).show()
+                        progressBar.visibility = View.GONE
                     }
                     IMAGE_PICKER_REQUEST = false
                 } else if (CAMERA_REQUEST) {
                     val imageBitmap = data?.extras?.get("data") as? Bitmap
                     if (imageBitmap != null) {
+                        progressBar.visibility = View.VISIBLE
                         viewModel.uploadPhoto(imageBitmap, requireContext()) { photoRef ->
                             // Update the photo reference here
                             currentPhotoRef = photoRef
+                            progressBar.visibility = View.GONE
                         }
                     } else {
                         Toast.makeText(requireContext(), "Error capturing image", Toast.LENGTH_SHORT).show()
+                        progressBar.visibility = View.GONE
                     }
                     CAMERA_REQUEST = false
                 }
@@ -266,6 +275,7 @@ class AddSighting : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewModel = ViewModelProvider(this).get(AddSightingViewModel::class.java)
+        progressBar = view.findViewById(R.id.progressBar)
 
         val hotspotLongitude = arguments?.getDouble("longitude", 0.0) ?: 0.0
         val hotspotLatitude = arguments?.getDouble("latitude", 0.0) ?: 0.0
@@ -288,10 +298,6 @@ class AddSighting : Fragment() {
         }
     }
     private fun addSightingAtLocation() {
-        if (currentPhotoRef == null) {
-            Toast.makeText(requireContext(), "No photo selected", Toast.LENGTH_SHORT).show()
-            return
-        }
 
         if (hotspotLatitude == null || hotspotLongitude == null) {
             // Hotspot not selected, use current location
@@ -305,7 +311,7 @@ class AddSighting : Fragment() {
                     binding.datePicker.text.toString(),
                     binding.sightingTimePicker.text.toString(),
                     binding.txtSightingDescription.text.toString(),
-                    currentPhotoRef!!, // Pass the photo reference here
+                    currentPhotoRef, // Pass the photo reference here
                     {
                         Toast.makeText(requireContext(), "Sighting added successfully!", Toast.LENGTH_SHORT).show()
                         resetSightingForm()
@@ -326,7 +332,7 @@ class AddSighting : Fragment() {
                 binding.txtSightingDescription.text.toString(),
                 hotspotLatitude!!,
                 hotspotLongitude!!,
-                currentPhotoRef!!, // Pass the photo reference here
+                currentPhotoRef, // Pass the photo reference here
                 {
                     Toast.makeText(requireContext(), "Sighting added successfully!", Toast.LENGTH_SHORT).show()
                     resetSightingForm()

@@ -35,7 +35,7 @@ class AddSightingViewModel : ViewModel() {
         sightingDescription: String,
         hotspotLatitude: Double? = null,
         hotspotLongitude: Double? = null,
-        photoReference: String,
+        photoReference: String? = null,
         onSuccess: () -> Unit,
         onFailure: (Exception) -> Unit
     ) {
@@ -64,7 +64,7 @@ class AddSightingViewModel : ViewModel() {
         dateOfSighting: String,
         timeOfSighting: String,
         sightingDescription: String,
-        photoReference: String,
+        photoReference: String? = null,
         onSuccess: () -> Unit,
         onFailure: (Exception) -> Unit
     ) {
@@ -101,7 +101,7 @@ class AddSightingViewModel : ViewModel() {
         sightingDescription: String,
         latitude: Double,
         longitude: Double,
-        photoReference: String,
+        photoReference: String? = null,
         onSuccess: () -> Unit,
         onFailure: (Exception) -> Unit
     ) {
@@ -155,6 +155,9 @@ class AddSightingViewModel : ViewModel() {
         uploadTask.addOnSuccessListener { taskSnapshot ->
             // Fetching the download URL of the uploaded photo
             photoRef.downloadUrl.addOnSuccessListener { uri ->
+                // Notify user that the photo has been uploaded successfully
+                Toast.makeText(context, "Photo uploaded successfully!", Toast.LENGTH_SHORT).show()
+
                 // Pass the download URL to the callback
                 onPhotoUploaded(uri.toString())
             }
