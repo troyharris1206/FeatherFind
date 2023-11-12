@@ -1,5 +1,6 @@
 package com.example.featherfind.sightings
 
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import androidx.lifecycle.ViewModelProvider
 import android.os.Bundle
@@ -31,6 +32,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.annotation.RequiresApi
+import com.example.featherfind.BirdsStatisticsAdapter
 import com.example.featherfind.MainActivity
 import java.text.SimpleDateFormat
 import java.time.LocalDateTime
@@ -82,7 +84,7 @@ class Sightings : Fragment() {
 
         //viewstatistics functionality
         viewStatistics.setOnClickListener {
-            Toast.makeText(requireContext(), "Feature coming in Final POE.", Toast.LENGTH_SHORT).show()
+            showPopupStatistics(requireContext())//calls pop up
         }
 
         // FromDate datepicker functionality
@@ -211,6 +213,113 @@ class Sightings : Fragment() {
         }
     }
 
+
+    @SuppressLint("MissingInflatedId")
+    fun showPopupStatistics(context: Context) {
+        val builder = AlertDialog.Builder(context)
+        val inflater = LayoutInflater.from(context)
+        val view = inflater.inflate(R.layout.popup_statistics_bird_layout, null)
+
+        builder.setView(view)
+        val dialog = builder.create()
+
+        // Initialize your Spinner
+        val birdSpinner = view.findViewById<Spinner>(R.id.yearSpinner)
+
+        // Create an array of years from 2021 to 2030
+        val years = (2021..2030).map { it.toString() }.toTypedArray()
+
+        // Create an ArrayAdapter using the string array and a default spinner layout
+        val adapter = ArrayAdapter<String>(context, android.R.layout.simple_spinner_item, years)
+
+        // Specify the layout to use when the list of choices appears
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+
+        // Apply the adapter to the spinner
+        birdSpinner.adapter = adapter
+
+        // Set an OnItemSelectedListener to update the query when a year is selected
+        birdSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parentView: AdapterView<*>?, selectedItemView: View?, position: Int, id: Long) {
+                // Get the selected year from the spinner
+                val selectedYear = years[position].toInt()
+
+                val db = Firebase.firestore
+                val birdsCollection = db.collection("Sightings")
+
+
+                // Replace "attributeName" and "value" with the actual attribute name and value to filter by
+                val attributeName = "userUID"
+                val value = FirebaseAuth.getInstance().currentUser?.uid
+
+                // Create a query to filter the documents based on the extracted year
+                val query = birdsCollection
+                    .whereEqualTo(attributeName, value)
+
+                query.get()
+                    .addOnSuccessListener { documents ->
+                        val birdsMap = HashMap<String, Int>() // Map to store sightings count for each month
+
+                        for (document in documents) {
+                            val bird = document.toObject(Birds::class.java)
+                            val year = extractYearFromDateString(bird.dateOfSighting)
+
+                            if (year == selectedYear) {
+                                // If the year matches the selected year, proceed to count sightings for each month
+                                val month = extractMonthFromDateString(bird.dateOfSighting)
+
+                                // Update the count for the month in the map
+                                birdsMap[month] = (birdsMap[month] ?: 0) + 1
+                            }
+                        }
+
+                        // Convert the map to a list of pairs for the adapter
+                        val birdStatisticsList = birdsMap.entries.map { (month, count) -> month to count }
+
+                        // Set the findings to the RecyclerView
+                        recyclerView = view.findViewById(R.id.statisticsRecyclerView)
+                        recyclerView.layoutManager = LinearLayoutManager(context)
+                        val adapter = BirdsStatisticsAdapter(birdStatisticsList)
+                        recyclerView.adapter = adapter
+                    }
+                    .addOnFailureListener { exception ->
+                        Log.d(TAG, "Error getting documents: ", exception)
+                    }
+            }
+
+            override fun onNothingSelected(parentView: AdapterView<*>?) {
+                // Handle no selection here
+            }
+        }
+
+        dialog.show()
+    }
+
+    private fun extractYearFromDateString(dateString: String): Int {
+        // Assuming dateString is in the format "yyyy-MM-dd"
+        val parts = dateString.split("-")
+        return if (parts.size == 3) {
+            // Year is at index 0 (0-based indexing)
+            parts[0].toIntOrNull() ?: 0
+        } else {
+            // Handle invalid date format
+            0
+        }
+    }
+
+    private fun extractMonthFromDateString(dateString: String): String {
+        // Assuming dateString is in the format "yyyy-MM-dd"
+        val parts = dateString.split("-")
+        return if (parts.size == 3) {
+            // Month is at index 1 (0-based indexing)
+            parts[1]
+        } else {
+            // Handle invalid date format
+            ""
+        }
+    }
+
+
     //Pop up for edit sightings
     @RequiresApi(Build.VERSION_CODES.O)
     fun showPopupEdit(context: Context) {
@@ -330,15 +439,19 @@ class Sightings : Fragment() {
                 .get()
                 .addOnSuccessListener { documents ->
                     birdDataList = documents.documents.mapNotNull { document ->
-                        Birds(
-                            document.getString("birdName").toString(),
-                            document.getString("birdSpecies").toString(),
-                            document.getString("timeOfSighting").toString(),
-                            document.getString("dateOfSighting").toString(),
-                            document.getString("sightingDescription").toString(),
-                            document.getString("photoReference").toString(),
-                            document.getString("userUID").toString()
-                        )
+                        document.getDouble("latitude")?.let {
+                            Birds(
+                                document.getString("birdName").toString(),
+                                document.getString("birdSpecies").toString(),
+                                document.getString("dateOfSighting").toString(),
+                                it,
+                                it,
+                                document.getString("photoReference").toString(),
+                                document.getString("sightingDescription").toString(),
+                                document.getString("timeOfSighting").toString(),
+                                document.getString("userUID").toString()
+                            )
+                        }
                     }
 
                     //Array adapter for the spinner component

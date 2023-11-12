@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mainScrollView"
-    android:layout_width="350dp"
+    android:layout_width="380dp"
     android:layout_marginStart="18dp"
     android:layout_marginTop="18dp"
     android:layout_height="match_parent"
@@ -14,7 +14,8 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".add_sighting.AddSighting">
+    tools:context=".add_sighting.AddSighting"
+    android:layout_marginBottom="15dp">
 
 
     <LinearLayout
@@ -50,7 +51,9 @@
 
     <ScrollView
         android:id="@+id/scrollView2"
-        android:layout_width="350dp"
+        android:layout_marginLeft="15dp"
+        android:layout_marginRight="15dp"
+        android:layout_width="340dp"
         android:layout_height="0dp"
         android:layout_marginStart="18dp"
         android:layout_marginTop="18dp"
@@ -223,6 +226,7 @@
                     android:layout_marginLeft="100dp"
                     android:layout_marginTop="10dp"
                     android:layout_marginRight="100dp"
+                    android:layout_marginBottom="15dp"
                     android:backgroundTint="#F98E55"
                     android:text="Cancel"
                     android:textAlignment="center"
