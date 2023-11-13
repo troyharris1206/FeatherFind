@@ -1,6 +1,8 @@
 package com.example.featherfind.sightings
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.AlertDialog
 import androidx.lifecycle.ViewModelProvider
 import android.os.Bundle
@@ -14,12 +16,19 @@ import android.widget.Button
 import android.app.DatePickerDialog
 import android.content.ContentValues.TAG
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Build
+import android.provider.MediaStore
 import android.util.Log
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.PopupMenu
+import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -31,9 +40,17 @@ import com.google.firebase.ktx.Firebase
 import com.google.firebase.firestore.FirebaseFirestore
 import android.widget.Spinner
 import android.widget.TextView
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.core.app.ActivityCompat
+import androidx.core.view.isVisible
 import com.example.featherfind.BirdsStatisticsAdapter
 import com.example.featherfind.MainActivity
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.storage.FirebaseStorage
+import com.squareup.picasso.Picasso
+import java.io.File
 import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -55,6 +72,8 @@ class Sightings : Fragment() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var editSightings: Button
     private lateinit var viewStatistics: Button
+    private var currentPhotoRef: String? = null
+
 
     //onCreateView method header
     override fun onCreateView(
@@ -227,7 +246,7 @@ class Sightings : Fragment() {
         val birdSpinner = view.findViewById<Spinner>(R.id.yearSpinner)
 
         // Create an array of years from 2021 to 2030
-        val years = (2021..2030).map { it.toString() }.toTypedArray()
+        val years = (2023..2030).map { it.toString() }.toTypedArray()
 
         // Create an ArrayAdapter using the string array and a default spinner layout
         val adapter = ArrayAdapter<String>(context, android.R.layout.simple_spinner_item, years)
@@ -330,6 +349,7 @@ class Sightings : Fragment() {
         builder.setView(view)
         val dialog = builder.create()
 
+
         //Gets the time options for the user to pick from in the dropdown
         val timeOptions = Array(48) { "" }
         val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
@@ -350,6 +370,7 @@ class Sightings : Fragment() {
         val birdSpinner = view.findViewById<Spinner>(R.id.birdSpinner) // Added the explicit type declaration
         val btnCurrentTime = view.findViewById<Button>(R.id.btnCurrentSightingTime)
         val sightingTimePicker = view.findViewById<Button>(R.id.sightingTimePicker)
+        val photoView = view.findViewById<ImageView>(R.id.photoView)
 
         //When the user clicks the start time button drop down
         sightingTimePicker.setOnClickListener() {
@@ -467,7 +488,25 @@ class Sightings : Fragment() {
                             birdSpecie.setText(selectedBird.birdSpecies)
                             birdDate.setText(selectedBird.dateOfSighting)
                             birdTime.setText(selectedBird.timeOfSighting)
+                            currentPhotoRef = selectedBird.photoReference
                             birdDescription.setText(selectedBird.sightingDescription)
+
+                            // Get the photo reference URL from your bird object
+                            val photoReference = currentPhotoRef
+
+                            if (photoReference == "null") {
+                                photoView.visibility = View.GONE
+                            } else {
+                                // Set the photo reference and make the photoView visible
+                                photoView.visibility = View.VISIBLE
+                                // Use Picasso, Glide, or any other image loading library to load the image into the ImageView
+                                Picasso.get()
+                                    .load(photoReference)
+                                    .into(photoView)
+
+                                // Set the scale type of the ImageView to FIT_CENTER
+                                photoView.scaleType = ImageView.ScaleType.FIT_CENTER
+                            }
                         }
 
                         override fun onNothingSelected(parent: AdapterView<*>?) {
