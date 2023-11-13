@@ -204,6 +204,10 @@ class AddSighting : Fragment() {
 
         //When the user clicks the add sighting button
         btnAddSighting.setOnClickListener() {
+            if (progressBar.visibility == View.VISIBLE) {
+                Toast.makeText(requireContext(), "Please wait for the photo to upload", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             if (txtBirdName.text.isNotEmpty() && txtBirdSpecies.text.isNotEmpty() && sightingDate.text != "Select Date"
                 && sightingTime.text != "Select Time" && txtSightingDescription.text.isNotEmpty()) {
 
