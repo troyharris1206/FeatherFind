@@ -141,7 +141,17 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             if(::mMap.isInitialized) {
                 updateMapMarkersBasedOnSwitch(isChecked)
             }
+
+            // Enable or disable the SeekBar based on the switch's state
+            val distanceSeekBar: SeekBar = findViewById(R.id.distanceSeekBar)
+            distanceSeekBar.isEnabled = !isChecked
+
+            // Call filterHotspotsByDistance if enabled
+            if (isChecked) {
+                filterHotspotsByDistance()
+            }
         }
+
         // Request the user's current location
         requestUserLocation()
         // Initialize SeekBar and TextView for maximum value
@@ -190,16 +200,23 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
                 // Create a new runnable
                 val newRunnable = Runnable {
-                    maxDistance = (progress.toFloat()) // You might need to adjust this based on your use-case
-                    filterHotspotsByDistance()
+                    maxDistance = progress.toFloat() // Adjust this based on your use-case
+                    val sightingsSwitch: SwitchMaterial = findViewById(R.id.sightings)
+
+                    // Only call filterHotspotsByDistance if sightings switch is not checked
+                    if (!sightingsSwitch.isChecked) {
+                        filterHotspotsByDistance()
+                    }
 
                     // Update TextView to show the newly set max value
+                    val maxValueTextView: TextView = findViewById(R.id.maxValue)
                     maxValueTextView.text = "Max: $progress"
                 }
 
                 // Execute the runnable after 300ms
                 seekBarHandler.postDelayed(newRunnable, 300)
             }
+
             override fun onStartTrackingTouch(seekBar: SeekBar?) {
                 // Optional
             }
@@ -208,6 +225,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 // Optional
             }
         })
+
     }
 
     private fun updateMapMarkersBasedOnSwitch(showSightings: Boolean) {
@@ -232,18 +250,30 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
      * After filtering, updates the map markers to reflect the filtered list.
      */
     private fun filterHotspotsByDistance() {
-        val maxDistanceInMeters = maxDistance * 1000
-        Log.d("Firestore", "$maxDistanceInMeters")
-        val filteredHotspots = allHotspots.filter { hotspot ->
-            val hotspotLocation = LatLng(hotspot.longitude, hotspot.latitude)
-            val distance = distanceBetween(userLocation, hotspotLocation)
-            distance <= maxDistanceInMeters
-        }
         val sightingsSwitch: SwitchMaterial = findViewById(R.id.sightings)
+        val distanceSeekBar: SeekBar = findViewById(R.id.distanceSeekBar)
+
+        // Enable or disable the SeekBar based on the switch's state
+
+        if (!sightingsSwitch.isChecked) {
+            val maxDistanceInMeters = maxDistance * 1000
+            Log.d("Firestore", "$maxDistanceInMeters")
+            val filteredHotspots = allHotspots.filter { hotspot ->
+                val hotspotLocation = LatLng(hotspot.longitude, hotspot.latitude)
+                val distance = distanceBetween(userLocation, hotspotLocation)
+                distance <= maxDistanceInMeters
+            }
+            updateMapMarkers(filteredHotspots, userSightings)
+            Log.d("Debug", "Filtered Hotspots: $filteredHotspots")
+        } else {
+            // If the switch is toggled to user sightings, just update the map without filtering
+            updateMapMarkers(allHotspots, userSightings)
+        }
+
         updateMapMarkersBasedOnSwitch(sightingsSwitch.isChecked)
-        updateMapMarkers(filteredHotspots, userSightings)
-        Log.d("Debug", "Filtered Hotspots: $filteredHotspots")
     }
+
+
     /**
      * Calculates the distance between two LatLng points using Android's Location API.
      * @param point1 The first geographical point.
